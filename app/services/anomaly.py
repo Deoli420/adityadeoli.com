@@ -18,6 +18,10 @@ class AnomalyService:
             severity_score=data.severity_score,
             reasoning=data.reasoning,
             probable_cause=data.probable_cause,
+            confidence=data.confidence,
+            recommendation=data.recommendation,
+            ai_called=data.ai_called,
+            used_fallback=data.used_fallback,
         )
         return await self._repo.create(anomaly)
 

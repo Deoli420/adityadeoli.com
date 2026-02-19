@@ -73,8 +73,11 @@ def _map_anomaly(pipeline) -> AnomalyReadout | None:
         severity_score=a.severity_score,
         reasoning=a.reasoning,
         probable_cause=a.probable_cause,
+        confidence=a.confidence,
+        recommendation=a.recommendation,
         skipped_reason=a.skipped_reason,
         ai_called=a.ai_called,
+        used_fallback=a.used_fallback,
     )
 
 

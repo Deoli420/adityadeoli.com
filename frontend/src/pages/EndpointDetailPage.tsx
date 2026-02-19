@@ -204,8 +204,12 @@ export function EndpointDetailPage() {
           isLoading={triggerRun.isPending}
         />
         <AnomalyAnalysis
-          anomalies={anomalies}
+          anomalies={anomalies ?? []}
+          lastReadout={lastRunResult?.anomaly ?? null}
+          totalRuns={totalRuns}
           isLoading={anomaliesLoading}
+          isRunning={triggerRun.isPending}
+          onRunAnalysis={() => triggerRun.mutate()}
         />
       </div>
 

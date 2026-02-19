@@ -7,6 +7,10 @@ export interface Anomaly {
   severity_score: number;
   reasoning: string | null;
   probable_cause: string | null;
+  confidence: number;
+  recommendation: string | null;
+  ai_called: boolean;
+  used_fallback: boolean;
   created_at: string;
 }
 
@@ -16,6 +20,9 @@ export interface AnomalyReadout {
   severity_score: number;
   reasoning: string;
   probable_cause: string;
+  confidence: number;
+  recommendation: string;
   skipped_reason: string | null;
   ai_called: boolean;
+  used_fallback: boolean;
 }

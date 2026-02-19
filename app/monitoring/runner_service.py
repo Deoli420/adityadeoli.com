@@ -306,12 +306,19 @@ class RunnerService:
                     severity_score=anomaly.severity_score,
                     reasoning=anomaly.reasoning,
                     probable_cause=anomaly.probable_cause,
+                    confidence=anomaly.confidence,
+                    recommendation=anomaly.recommendation,
+                    ai_called=anomaly.ai_called,
+                    used_fallback=anomaly.used_fallback,
                 )
                 await self._anomaly_repo.create(anomaly_record)
                 logger.info(
-                    "Anomaly persisted for run %s (severity=%.0f)",
+                    "Anomaly persisted for run %s (severity=%.0f confidence=%.2f ai=%s fallback=%s)",
                     saved_run.id,
                     anomaly.severity_score,
+                    anomaly.confidence,
+                    anomaly.ai_called,
+                    anomaly.used_fallback,
                 )
 
         # 9. Risk scoring (deterministic, always runs)

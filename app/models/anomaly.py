@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,7 +25,20 @@ class Anomaly(Base):
     anomaly_detected: Mapped[bool] = mapped_column(nullable=False)
     severity_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     reasoning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    probable_cause: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
+    probable_cause: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # ── New fields: trust & explainability ────────────────────────────
+    confidence: Mapped[float] = mapped_column(
+        Float, nullable=False, default=0.0, server_default="0"
+    )
+    recommendation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_called: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    used_fallback: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

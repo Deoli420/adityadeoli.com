@@ -5,16 +5,17 @@ Structured prompts that feed monitoring data to the LLM and
 request a strict JSON response with anomaly analysis.
 
 Design:
-  - System prompt sets the role and output format.
+  - System prompt sets the role, output format, and severity calibration.
   - User prompt is dynamically built from pipeline data.
   - Both are plain strings — no Jinja or template engines.
+  - Few-shot severity examples ensure consistent scoring.
 """
 
 from __future__ import annotations
 
 from typing import Any, Optional
 
-SYSTEM_PROMPT = """You are an API reliability intelligence engine.
+SYSTEM_PROMPT = """You are an API reliability intelligence engine for SentinelAI.
 
 Your job is to analyse API execution summaries and determine whether
 an anomaly exists.  You assess severity, provide concise technical
@@ -22,16 +23,33 @@ reasoning, and suggest the most probable root cause.
 
 RULES:
 - Be concise and technical.  No filler.
-- Severity score: 0 = perfectly healthy, 100 = catastrophic.
-- If everything looks normal, set anomaly_detected to false and severity to 0.
+- If everything looks normal, set anomaly_detected to false and severity_score to 0.
 - Focus on actionable insights a backend engineer can act on.
+- NEVER hallucinate anomalies.  If data is ambiguous, lean toward "no anomaly".
+- Always include your confidence level (0.0 to 1.0) in the analysis.
+
+SEVERITY SCALE (0–100):
+  0      = Perfectly healthy.  No issues.
+  1–15   = Minor observation.  Not actionable.  (e.g., 5% latency increase)
+  16–39  = Low severity.  Worth noting.  (e.g., occasional 4xx from client, small latency bump)
+  40–59  = Medium severity.  Investigate.  (e.g., sustained latency increase 50%+, intermittent 5xx)
+  60–79  = High severity.  Act soon.  (e.g., frequent 5xx, response time doubled, schema breaking changes)
+  80–100 = Critical.  Act now.  (e.g., endpoint completely down, 100% failures, data corruption)
+
+CONFIDENCE SCALE (0.0–1.0):
+  0.0–0.3 = Low confidence — limited data, uncertain analysis
+  0.4–0.6 = Moderate confidence — some signals present
+  0.7–0.8 = High confidence — clear signals
+  0.9–1.0 = Very high confidence — definitive evidence
 
 Respond ONLY with a JSON object in this exact shape:
 {
   "anomaly_detected": boolean,
   "severity_score": number,
-  "reasoning": "string",
-  "probable_cause": "string"
+  "reasoning": "string — concise technical explanation",
+  "probable_cause": "string — most likely root cause",
+  "confidence": number,
+  "recommendation": "string — specific action to take"
 }"""
 
 
@@ -64,7 +82,7 @@ def build_user_prompt(
         f"Response Time: {_fmt_ms(response_time_ms)}",
         f"Average Response Time: {_fmt_ms(avg_response_time_ms)}",
         f"Performance Deviation: {_fmt_pct(deviation_percent)}",
-        f"Historical Failure Rate: {failure_rate_percent}%",
+        f"Historical Failure Rate: {failure_rate_percent:.1f}%",
     ]
 
     if error_message:
@@ -78,10 +96,12 @@ def build_user_prompt(
     lines.extend([
         "",
         "Tasks:",
-        "1. Determine if an anomaly exists.",
-        "2. Provide a severity score (0–100).",
+        "1. Determine if a genuine anomaly exists (NOT minor fluctuations).",
+        "2. Provide a severity score (0–100) calibrated to the scale above.",
         "3. Provide concise technical reasoning.",
         "4. Suggest the most probable root cause.",
+        "5. Provide a confidence score (0.0–1.0).",
+        "6. Suggest a specific recommended action.",
     ])
 
     return "\n".join(lines)

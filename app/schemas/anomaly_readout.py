@@ -19,5 +19,8 @@ class AnomalyReadout(BaseModel):
     severity_score: float = Field(default=0.0, ge=0, le=100)
     reasoning: str = ""
     probable_cause: str = ""
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    recommendation: str = ""
     skipped_reason: Optional[str] = None
     ai_called: bool = False
+    used_fallback: bool = False

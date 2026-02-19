@@ -145,9 +145,9 @@ class RiskEngine:
             ratio = _clamp(count / self.DRIFT_MAX_DIFFS, 0.0, 1.0)
             drift_score = ratio * self.W_DRIFT
 
-        # ── 4. AI severity component (direct from LLM) ─────────────
+        # ── 4. AI / fallback severity component ──────────────────────
         ai_score = 0.0
-        if anomaly and anomaly.ai_called and anomaly.anomaly_detected:
+        if anomaly and anomaly.anomaly_detected and (anomaly.ai_called or anomaly.used_fallback):
             # severity_score is 0–100; we scale to 0–W_AI
             ai_score = (anomaly.severity_score / 100.0) * self.W_AI
 
