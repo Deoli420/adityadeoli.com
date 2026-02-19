@@ -1,0 +1,87 @@
+# ── SentinelAI — Docker Compose (production) ───────────────────────────
+#
+# Services:
+#   db    — PostgreSQL 16     (persistent volume, health-checked)
+#   api   — FastAPI + Uvicorn (multi-worker, non-root, health-checked)
+#   nginx — Reverse proxy     (SSL termination, rate-limit, subdomains)
+#
+# Usage:
+#   docker compose up -d --build
+#   docker compose logs -f api
+#   docker compose down
+#
+# Endpoints (after SSL):
+#   https://api.sentinelai.adityadeoli.com       → API (JSON)
+#   https://api.sentinelai.adityadeoli.com/docs  → Swagger UI
+#   https://sentinelai.adityadeoli.com           → Dashboard placeholder
+#   https://n8n.sentinelai.adityadeoli.com       → n8n workflow editor
+# ─────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-sentinel}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sentinel}
+      POSTGRES_DB: ${DB_NAME:-sentinel_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sentinel} -d ${DB_NAME:-sentinel_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinel
+
+  # ── FastAPI Application ─────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sentinel
+      - shared
+
+  # ── Nginx Reverse Proxy ─────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - ./frontend/dist:/var/www/frontend:ro
+    depends_on:
+      - api
+    networks:
+      - sentinel
+      - shared
+
+volumes:
+  pgdata:
+    driver: local
+  certbot-webroot:
+    driver: local
+
+networks:
+  sentinel:
+    driver: bridge
+  shared:
+    external: true
+    name: sentinel-shared

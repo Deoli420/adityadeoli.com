@@ -1,0 +1,77 @@
+# ── n8n — Docker Compose (production) ──────────────────────────────────
+#
+# Separate stack from SentinelAI with its own Postgres.
+# Shares the sentinel-shared Docker network so SentinelAI can
+# send webhooks to n8n via internal DNS (http://n8n:5678).
+#
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f n8n
+#
+# Access:
+#   https://n8n.sentinelai.adityadeoli.com  (via SentinelAI's nginx)
+# ─────────────────────────────────────────────────────────────────────────
+
+services:
+  n8n-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${N8N_DB_USER:-n8n}
+      POSTGRES_PASSWORD: ${N8N_DB_PASSWORD}
+      POSTGRES_DB: ${N8N_DB_NAME:-n8n}
+    volumes:
+      - n8n_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${N8N_DB_USER:-n8n} -d ${N8N_DB_NAME:-n8n}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - n8n-internal
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Database
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-db
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
+      # n8n config
+      N8N_HOST: n8n.sentinelai.adityadeoli.com
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://n8n.sentinelai.adityadeoli.com/
+      N8N_EDITOR_BASE_URL: https://n8n.sentinelai.adityadeoli.com/
+      GENERIC_TIMEZONE: ${TZ:-America/New_York}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      n8n-db:
+        condition: service_healthy
+    expose:
+      - "5678"
+    networks:
+      - n8n-internal
+      - shared
+
+volumes:
+  n8n_pgdata:
+    driver: local
+  n8n_data:
+    driver: local
+
+networks:
+  n8n-internal:
+    driver: bridge
+  shared:
+    external: true
+    name: sentinel-shared

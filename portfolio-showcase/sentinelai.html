@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SentinelAI — Aditya Deoli | AI-Powered API Monitoring Platform</title>
+  <meta name="description" content="SentinelAI: A production-grade, multi-tenant API monitoring platform with anomaly detection, risk scoring, and real-time alerting. Built by Aditya Deoli." />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a1a;
+      --surface: #0f0f23;
+      --surface-2: #161630;
+      --surface-3: #1a1a3a;
+      --border: #1e1e3a;
+      --border-glow: rgba(0,255,247,0.15);
+      --cyan: #00fff7;
+      --pink: #ff00c1;
+      --purple: #8e44ec;
+      --purple-light: #b026ff;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+      --text-muted: #6b7280;
+    }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    code, .mono { font-family: 'Fira Code', monospace; }
+    a { color: var(--cyan); text-decoration: none; transition: opacity 0.2s; }
+    a:hover { opacity: 0.8; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Animations ──────────────────────────────────── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .6s ease-out both; }
+    .fade-up-1 { animation-delay: .1s; }
+    .fade-up-2 { animation-delay: .2s; }
+    .fade-up-3 { animation-delay: .3s; }
+    .fade-up-4 { animation-delay: .4s; }
+    .fade-up-5 { animation-delay: .5s; }
+
+    /* ── Nav ──────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(10,10,26,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    nav .back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text-dim); transition: color .2s;
+    }
+    nav .back:hover { color: var(--cyan); opacity: 1; }
+    nav .back svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; gap: 20px; }
+    .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-dim); transition: color .2s; }
+    .nav-links a:hover { color: var(--cyan); opacity: 1; }
+
+    /* ── Hero ─────────────────────────────────────────── */
+    .hero { padding: 80px 0 48px; text-align: center; position: relative; }
+    .hero::before {
+      content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse, rgba(142,68,236,0.08) 0%, rgba(0,255,247,0.04) 40%, transparent 70%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(0,255,247,0.08); border: 1px solid rgba(0,255,247,0.2);
+      border-radius: 999px; padding: 5px 14px;
+      font-size: 11px; font-weight: 600; color: var(--cyan);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 20px;
+    }
+    .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    .hero h1 {
+      font-size: clamp(36px, 5.5vw, 56px); font-weight: 700;
+      line-height: 1.12; letter-spacing: -0.03em; margin-bottom: 18px;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 50%, var(--pink) 100%);
+      background-size: 200% 200%; animation: shimmer 4s ease-in-out infinite;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero .subtitle { font-size: 17px; color: var(--text-dim); max-width: 620px; margin: 0 auto 12px; }
+    .hero .sub-detail { font-size: 14px; color: var(--text-muted); max-width: 540px; margin: 0 auto 32px; }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+
+    /* ── Buttons ──────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 24px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; border: none; transition: all .2s;
+    }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-primary { background: var(--cyan); color: #0a0a1a; }
+    .btn-primary:hover { background: #33fff9; opacity: 1; transform: translateY(-1px); }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); opacity: 1; }
+    .btn-purple { background: var(--purple); color: #fff; }
+    .btn-purple:hover { background: var(--purple-light); opacity: 1; transform: translateY(-1px); }
+
+    /* ── Quick Stats Strip ────────────────────────────── */
+    .quick-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; max-width: 700px; margin: 0 auto; }
+    .quick-stat {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 12px;
+      text-align: center; transition: border-color .3s;
+    }
+    .quick-stat:hover { border-color: var(--border-glow); }
+    .quick-stat .val { font-size: 22px; font-weight: 700; font-family: 'Fira Code', monospace; }
+    .quick-stat .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Stack Chips ──────────────────────────────────── */
+    .stack-section { padding: 32px 0; border-top: 1px solid var(--border); }
+    .stack-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .stack-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px 14px; font-size: 12px; font-weight: 500; color: var(--text-dim);
+      font-family: 'Fira Code', monospace; transition: border-color .2s;
+    }
+    .stack-chip:hover { border-color: rgba(0,255,247,.3); }
+    .stack-chip .dot-c { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* ── Section Headers ──────────────────────────────── */
+    .section { padding: 64px 0; border-top: 1px solid var(--border); }
+    .section-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--cyan); margin-bottom: 8px;
+    }
+    .section-title { font-size: clamp(22px,3vw,32px); font-weight: 700; margin-bottom: 12px; letter-spacing: -.01em; }
+    .section-desc { font-size: 14px; color: var(--text-dim); max-width: 580px; margin-bottom: 40px; }
+
+    /* ── Feature Cards ────────────────────────────────── */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 28px; transition: border-color .3s, transform .2s;
+    }
+    .feature-card:hover { border-color: var(--border-glow); transform: translateY(-3px); }
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+    }
+    .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .feature-card p { font-size: 13px; color: var(--text-dim); line-height: 1.75; }
+
+    /* ── Architecture ─────────────────────────────────── */
+    .arch-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 32px; overflow-x: auto;
+    }
+    .arch-box pre { font-family: 'Fira Code', monospace; font-size: 12px; line-height: 1.9; color: var(--text-dim); }
+    .hl-cyan { color: var(--cyan); } .hl-pink { color: var(--pink); }
+    .hl-purple { color: var(--purple); } .hl-green { color: var(--green); }
+    .hl-yellow { color: var(--yellow); } .hl-red { color: var(--red); }
+
+    /* ── Security Checklist ───────────────────────────── */
+    .check-list { display: grid; gap: 6px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      transition: border-color .2s;
+    }
+    .check-item:hover { border-color: rgba(34,197,94,.3); }
+    .check-icon { flex-shrink: 0; margin-top: 2px; }
+    .check-item strong { font-size: 14px; display: block; margin-bottom: 2px; }
+    .check-item .detail { font-size: 12px; color: var(--text-muted); }
+
+    /* ── Decision Cards ───────────────────────────────── */
+    .decision-grid { display: grid; gap: 14px; }
+    .decision-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 24px; transition: border-color .3s;
+    }
+    .decision-card:hover { border-color: rgba(142,68,236,.3); }
+    .decision-card h3 { font-size: 15px; font-weight: 600; color: var(--purple); margin-bottom: 8px; }
+    .decision-card p { font-size: 13px; color: var(--text-dim); line-height: 1.75; }
+
+    /* ── Learnings Cards ──────────────────────────────── */
+    .learn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .learn-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 24px; transition: border-color .3s;
+    }
+    .learn-card:hover { border-color: var(--border-glow); }
+    .learn-card .icon-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .learn-card h3 { font-size: 15px; font-weight: 600; }
+    .learn-card p { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+
+    /* ── FAQ ───────────────────────────────────────────── */
+    .faq-list { display: grid; gap: 8px; }
+    .faq-item { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .faq-q {
+      width: 100%; padding: 16px 20px; background: var(--surface); border: none;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 15px; font-weight: 600; color: var(--cyan); cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif; text-align: left; transition: background .2s;
+    }
+    .faq-q:hover { background: var(--surface-2); }
+    .faq-q svg { width: 18px; height: 18px; color: var(--purple); flex-shrink: 0; transition: transform .2s; }
+    .faq-item.open .faq-q svg { transform: rotate(180deg); }
+    .faq-a { padding: 0 20px 16px; font-size: 14px; color: var(--text-dim); line-height: 1.7; display: none; }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── Stats Grid ───────────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 24px; text-align: center; transition: border-color .3s;
+    }
+    .stat-card:hover { border-color: var(--border-glow); }
+    .stat-card .value { font-size: 32px; font-weight: 700; font-family: 'Fira Code', monospace; margin-bottom: 2px; }
+    .stat-card .label { font-size: 13px; color: var(--text-dim); }
+    .stat-card .sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Pipeline ─────────────────────────────────────── */
+    .pipeline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .pipeline .step {
+      padding: 6px 14px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; font-size: 12px; color: var(--text-dim);
+    }
+    .pipeline .arrow { color: var(--purple); font-size: 14px; }
+
+    /* ── CTA ───────────────────────────────────────────── */
+    .cta { padding: 64px 0; text-align: center; border-top: 1px solid var(--border); }
+    .cta h2 { font-size: clamp(22px,3vw,32px); font-weight: 700; margin-bottom: 12px; }
+    .cta p { font-size: 14px; color: var(--text-dim); margin-bottom: 28px; }
+
+    /* ── Footer ────────────────────────────────────────── */
+    footer { border-top: 1px solid var(--border); padding: 24px 0; text-align: center; font-size: 12px; color: var(--text-muted); }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .hero { padding: 48px 0 36px; }
+      .quick-stats { grid-template-columns: repeat(2, 1fr); }
+      .feature-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .learn-grid { grid-template-columns: 1fr; }
+      .pipeline { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="container">
+    <a href="/" class="back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      adityadeoli.com
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#security">Security</a>
+      <a href="https://sentinelai.adityadeoli.com" target="_blank">Live App ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="badge fade-up">
+      <span class="dot"></span>
+      Live &amp; Actively Monitoring
+    </div>
+    <h1 class="fade-up fade-up-1">
+      <span class="gradient">SentinelAI</span><br />
+      Intelligent API Monitoring &amp; Risk Scoring
+    </h1>
+    <p class="subtitle fade-up fade-up-2">
+      A production-grade, multi-tenant platform that monitors API endpoints in real time,
+      detects anomalies with statistical analysis, computes composite risk scores, and
+      alerts teams before outages reach users.
+    </p>
+    <p class="sub-detail fade-up fade-up-3">
+      Designed, architected, and built end-to-end by me — from database schema to pixel-perfect dashboard.
+    </p>
+    <div class="hero-actions fade-up fade-up-4">
+      <a href="https://sentinelai.adityadeoli.com" target="_blank" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        View Live Dashboard
+      </a>
+      <a href="https://api.sentinelai.adityadeoli.com/docs" target="_blank" class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        API Docs (Swagger)
+      </a>
+      <a href="https://github.com/Deoli420/adityadeoli.com" target="_blank" class="btn btn-purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 2 2 4-4"/><path d="M21 12V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/></svg>
+        Source Code
+      </a>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="quick-stats fade-up fade-up-5">
+      <div class="quick-stat"><div class="val" style="color:var(--cyan)">12k+</div><div class="lbl">Lines of Code</div></div>
+      <div class="quick-stat"><div class="val" style="color:var(--purple)">25+</div><div class="lbl">API Endpoints</div></div>
+      <div class="quick-stat"><div class="val" style="color:var(--green)">40+</div><div class="lbl">React Components</div></div>
+      <div class="quick-stat"><div class="val" style="color:var(--pink)">8+</div><div class="lbl">DB Migrations</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="stack-section">
+  <div class="container">
+    <div class="stack-grid">
+      <span class="stack-chip"><span class="dot-c" style="background:#3573b5"></span>Python 3.12</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#009688"></span>FastAPI</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#d63b2f"></span>SQLAlchemy 2.0</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#336791"></span>PostgreSQL 16</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#3178c6"></span>TypeScript</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#61dafb"></span>React 18</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#38bdf8"></span>Tailwind CSS v4</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#f5bd41"></span>Zustand</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#ff4154"></span>React Query</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#2496ed"></span>Docker</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#009639"></span>nginx + HTTP/2</span>
+      <span class="stack-chip"><span class="dot-c" style="background:#ff6f00"></span>n8n Workflows</span>
+      <span class="stack-chip"><span class="dot-c" style="background:var(--green)"></span>Let's Encrypt TLS</span>
+      <span class="stack-chip"><span class="dot-c" style="background:var(--yellow)"></span>Alembic Migrations</span>
+      <span class="stack-chip"><span class="dot-c" style="background:var(--purple)"></span>JWT + bcrypt</span>
+    </div>
+  </div>
+</section>
+
+<!-- The Problem -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Motivation</p>
+    <h2 class="section-title">The Problem I Solved</h2>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;">
+      <div style="display:grid;gap:18px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--pink);margin-top:8px;flex-shrink:0;"></span>
+          <p style="font-size:15px;color:var(--text-dim);line-height:1.7;">
+            <strong style="color:var(--pink);">Blind spots in production.</strong>
+            Teams ship APIs but rely on users to report outages. By the time a 500 error hits a Slack channel, hundreds of requests have already failed silently.
+          </p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--pink);margin-top:8px;flex-shrink:0;"></span>
+          <p style="font-size:15px;color:var(--text-dim);line-height:1.7;">
+            <strong style="color:var(--pink);">No risk context.</strong>
+            Existing uptime monitors say "it's down" but they don't quantify <em>how risky</em> an endpoint has become over time. A slow degradation is invisible until it cascades.
+          </p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--pink);margin-top:8px;flex-shrink:0;"></span>
+          <p style="font-size:15px;color:var(--text-dim);line-height:1.7;">
+            <strong style="color:var(--pink);">Security as an afterthought.</strong>
+            Most monitoring dashboards lack tenant isolation, proper auth, and SSRF protection. Internal tools become attack vectors.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="section" id="features">
+  <div class="container">
+    <p class="section-label">Core Capabilities</p>
+    <h2 class="section-title">What SentinelAI Does</h2>
+    <p class="section-desc">Every feature designed, architected, and implemented by me — from database schema to pixel-perfect UI.</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(0,255,247,.1);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Real-Time Monitoring</h3>
+        <p>Automated health probes hit your endpoints on a configurable schedule. Tracks response times, status codes, SSL validity, and DNS resolution from a single dashboard with auto-refresh.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(142,68,236,.1);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <h3>Anomaly Detection</h3>
+        <p>Statistical analysis flags abnormal latency spikes, unexpected status codes, and response deviations. Every run is scored against a rolling baseline so you catch regressions before users do.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(239,68,68,.1);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <h3>Risk Scoring Engine</h3>
+        <p>Each endpoint gets a composite risk score (0–100) computed from latency percentiles, failure rates, anomaly frequency, and cert expiry. Four severity tiers: LOW → MEDIUM → HIGH → CRITICAL.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(234,179,8,.1);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <h3>Intelligent Alerting</h3>
+        <p>Configurable alert rules powered by n8n webhook integrations. Set thresholds per-endpoint, define escalation chains, and get notified through Slack, email, or any webhook service.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(34,197,94,.1);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3>Multi-Tenant Auth &amp; RBAC</h3>
+        <p>JWT access tokens with httpOnly refresh-token rotation. Organization-level data isolation with three roles — Admin, Member, Viewer — enforced at both API and UI layers.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(255,0,193,.1);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>Server-Side Proxy</h3>
+        <p>Test any API directly from the dashboard without CORS headaches. Built-in SSRF protection blocks private networks, cloud metadata, and localhost. Supports all HTTP methods, auth types, and body formats.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Architecture -->
+<section class="section" id="architecture">
+  <div class="container">
+    <p class="section-label">System Design</p>
+    <h2 class="section-title">Architecture Overview</h2>
+    <p class="section-desc">Four-layer pipeline from probe execution to user-facing alerts, all running on a single DigitalOcean droplet with Docker Compose.</p>
+    <div class="arch-box">
+      <pre>
+<span class="hl-cyan">Browser</span> ──▶ <span class="hl-green">nginx</span> (TLS 1.3, HTTP/2, rate-limit, gzip, HSTS)
+          │
+          ├── <span class="hl-cyan">/assets/*</span>  ──▶ Static files (Vite hashed, 1yr cache, immutable)
+          │
+          ├── <span class="hl-cyan">/api/*</span>     ──▶ <span class="hl-purple">FastAPI</span> (Uvicorn, fully async)
+          │                    │
+          │                    ├── <span class="hl-yellow">Auth Layer</span>
+          │                    │   ├── JWT (15min access tokens)
+          │                    │   ├── httpOnly refresh cookies (SameSite=Strict)
+          │                    │   ├── Refresh token rotation (SHA-256 hashed)
+          │                    │   ├── RBAC: Admin / Member / Viewer
+          │                    │   └── Account lockout (5 attempts → 15min)
+          │                    │
+          │                    ├── <span class="hl-green">Data Layer</span>
+          │                    │   ├── PostgreSQL 16 (async via SQLAlchemy 2.0)
+          │                    │   ├── Alembic migrations (8+ revisions)
+          │                    │   ├── Repository pattern (tenant-scoped)
+          │                    │   └── Cascade delete (endpoint → runs → anomalies → scores)
+          │                    │
+          │                    ├── <span class="hl-pink">Monitoring Pipeline</span>
+          │                    │   ├── APScheduler (configurable cron)
+          │                    │   ├── httpx async runner (timeout, redirect, SSL verify)
+          │                    │   ├── Statistical anomaly detector (rolling baselines)
+          │                    │   ├── Composite risk engine (0–100 scoring)
+          │                    │   └── Failure-rate tracker (per-endpoint %)
+          │                    │
+          │                    ├── <span class="hl-yellow">Alert Pipeline</span>
+          │                    │   └── n8n webhooks → Slack / Email / PagerDuty
+          │                    │
+          │                    └── <span class="hl-red">Security</span>
+          │                        ├── SSRF protection (DNS resolve → RFC 1918 check)
+          │                        ├── CSP + XSS + HSTS + Referrer-Policy headers
+          │                        └── Rate limiting (50r/s global, 5/min login)
+          │
+          └── <span class="hl-cyan">/*</span>         ──▶ <span class="hl-green">React SPA</span> (Vite, TypeScript strict)
+                               ├── Zustand (auth state, in-memory only)
+                               ├── React Query (server state, auto-refetch)
+                               ├── Recharts (performance time-series)
+                               └── Tailwind CSS v4 (@theme directive)
+      </pre>
+    </div>
+
+    <!-- Request lifecycle -->
+    <div style="margin-top:24px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:20px;">
+      <h4 style="font-size:14px;font-weight:600;color:var(--cyan);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Request Lifecycle
+      </h4>
+      <div class="pipeline">
+        <span class="step">Scheduler fires</span><span class="arrow">→</span>
+        <span class="step">httpx async probe</span><span class="arrow">→</span>
+        <span class="step">Capture response</span><span class="arrow">→</span>
+        <span class="step">Anomaly detector</span><span class="arrow">→</span>
+        <span class="step">Risk engine</span><span class="arrow">→</span>
+        <span class="step">Dashboard refresh</span><span class="arrow">→</span>
+        <span class="step">Alert (if threshold breached)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Security -->
+<section class="section" id="security">
+  <div class="container">
+    <p class="section-label">Hardened by Default</p>
+    <h2 class="section-title">Security Posture</h2>
+    <p class="section-desc">Security isn't bolted on — it's baked into every layer of the stack.</p>
+    <div class="check-list">
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>SSRF Protection</strong><span class="detail">DNS resolution check against RFC 1918, cloud metadata (169.254.x.x), and blocked hostnames</span></div>
+      </div>
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>Rate Limiting</strong><span class="detail">50 req/s global burst, 5/min on login — stops brute-force and DDoS at the nginx layer</span></div>
+      </div>
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>HSTS + TLS 1.3</strong><span class="detail">max-age=31536000 with includeSubDomains. HTTP strictly redirected to HTTPS.</span></div>
+      </div>
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>Content Security Policy</strong><span class="detail">Strict CSP blocking inline scripts, external resources, and frame embedding</span></div>
+      </div>
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>httpOnly Refresh Cookies</strong><span class="detail">Secure, SameSite=Strict, Path=/api/v1/auth — invisible to JavaScript, immune to XSS theft</span></div>
+      </div>
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>Bcrypt (12 rounds)</strong><span class="detail">Industry-standard adaptive hashing — cost factor scales with hardware improvements</span></div>
+      </div>
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>Account Lockout</strong><span class="detail">5 failed attempts → 15-minute lockout with full audit trail logging</span></div>
+      </div>
+      <div class="check-item">
+        <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>Tenant Data Isolation</strong><span class="detail">Every query scoped by organization_id at the repository layer — zero cross-tenant leakage</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Engineering Decisions -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Tradeoffs</p>
+    <h2 class="section-title">Key Engineering Decisions</h2>
+    <p class="section-desc">The "why" behind the architecture — real tradeoffs, not textbook answers.</p>
+    <div class="decision-grid">
+      <div class="decision-card">
+        <h3>Same-Origin Serving over Separate Frontend Deploy</h3>
+        <p>nginx serves both the React SPA and proxies /api/ on the same domain (<code>sentinelai.adityadeoli.com</code>). This eliminates CORS complexity entirely and lets httpOnly cookies work with SameSite=Strict — the most secure cookie configuration available.</p>
+      </div>
+      <div class="decision-card">
+        <h3>Denormalized organization_id on api_runs</h3>
+        <p>ApiRun stores organization_id even though it could be inferred via the parent endpoint. This denormalization lets me filter runs by tenant without joining through api_endpoints on every dashboard query — critical for keeping the stats endpoint fast.</p>
+      </div>
+      <div class="decision-card">
+        <h3>Refresh Token Rotation over Long-Lived Access Tokens</h3>
+        <p>Access tokens expire in 15 minutes. On 401, the frontend silently calls /auth/refresh which atomically rotates the refresh token (old one revoked, new one issued). Stolen tokens have a blast radius of minutes, not days.</p>
+      </div>
+      <div class="decision-card">
+        <h3>Statistical Baselines over Fixed Thresholds</h3>
+        <p>Rather than alerting on "latency &gt; 1000ms", the anomaly detector compares each response against a rolling average. A 200ms endpoint spiking to 800ms is far more concerning than a 2s endpoint at 2.2s — context matters.</p>
+      </div>
+      <div class="decision-card">
+        <h3>Repository Pattern over Raw SQL</h3>
+        <p>Every database operation goes through a repository class with explicit tenant_id parameters. This makes tenant-scoping auditable (grep one directory), testable (mock the repo), and migration-safe (schema changes in one place).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- What I Learned -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Reflections</p>
+    <h2 class="section-title">What I Learned Building This</h2>
+    <div class="learn-grid">
+      <div class="learn-card">
+        <div class="icon-row">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <h3>Production Auth is Hard</h3>
+        </div>
+        <p>Token rotation, race conditions on concurrent 401 retries, httpOnly cookie paths, lockout mechanics — each has subtle failure modes that only surface under real load. I built a request-queuing interceptor that silently refreshes and replays failed requests.</p>
+      </div>
+      <div class="learn-card">
+        <div class="icon-row">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <h3>Multi-Tenancy Touches Everything</h3>
+        </div>
+        <p>Adding organization_id isn't just a column — it changes every query, every service method, every API response. I had to systematically audit all 3 layers (routes → services → repositories) for runs, anomalies, and risk scores to eliminate data leakage.</p>
+      </div>
+      <div class="learn-card">
+        <div class="icon-row">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          <h3>nginx Header Inheritance is Brutal</h3>
+        </div>
+        <p>Any <code>add_header</code> in a child location block silently drops ALL parent headers. I had to repeat every security header in every location context — a footgun that cost me hours of debugging missing CSP headers in production.</p>
+      </div>
+      <div class="learn-card">
+        <div class="icon-row">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <h3>SSRF is a Real Threat</h3>
+        </div>
+        <p>A proxy endpoint that lets users hit any URL is an SSRF vector. I added hostname resolution → IP check against RFC 1918 ranges, carrier-grade NAT, IPv6 private ranges, cloud metadata IPs, and a blocked-hostname list.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Deep Dive</p>
+    <h2 class="section-title">Q&amp;A</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Why did I build SentinelAI?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a">As a QA engineer, I've seen production incidents that could have been prevented with better API monitoring. SentinelAI is my answer — a platform that doesn't just check if endpoints are up, but actively scores their risk and alerts you before users notice problems. I wanted to prove I could build a full production system end-to-end.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          How does the risk scoring work?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a">Each API run produces a composite score from 0 (healthy) to 100 (critical). The engine factors in: response latency vs. rolling average, HTTP status code severity, failure rate over time, anomaly frequency, and SSL certificate expiry proximity. Scores are bucketed into four tiers that drive alert urgency.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          What makes the multi-tenant architecture secure?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a">Every database query is scoped by organization_id — enforced at the repository layer, not just the API layer. JWT tokens embed the tenant context, and a FastAPI dependency extracts and validates it on every request. Refresh tokens use SHA-256 hashing with automatic rotation on each use.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Can it monitor any API?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a">Yes — the server-side proxy bypasses CORS restrictions, so you can monitor third-party APIs, internal microservices, or any HTTP endpoint. SSRF protection ensures the proxy can't be abused to reach private networks or cloud metadata services.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          What's the alerting pipeline?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a">SentinelAI integrates with n8n for flexible workflow automation. When a risk threshold is breached, a webhook fires into n8n which can route alerts to Slack, email, PagerDuty, or any custom integration. Alert rules are configurable per-endpoint with customizable severity thresholds.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">By the Numbers</p>
+    <h2 class="section-title">Platform Metrics</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="value" style="color:var(--cyan)">25+</div>
+        <div class="label">REST Endpoints</div>
+        <div class="sub">Auth, CRUD, monitoring, alerts, proxy</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" style="color:var(--purple)">0–100</div>
+        <div class="label">Risk Score Range</div>
+        <div class="sub">4 severity tiers with color coding</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" style="color:var(--green)">24/7</div>
+        <div class="label">Continuous Monitoring</div>
+        <div class="sub">APScheduler with configurable intervals</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" style="color:var(--pink)">15min</div>
+        <div class="label">Token Expiry</div>
+        <div class="sub">Short-lived JWTs with silent refresh</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" style="color:var(--yellow)">100%</div>
+        <div class="label">Tenant Isolation</div>
+        <div class="sub">Zero cross-org data leakage</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" style="color:var(--cyan)">&lt;50ms</div>
+        <div class="label">Dashboard Load</div>
+        <div class="sub">React Query + aggressive caching</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="container">
+    <h2>See It in Action</h2>
+    <p>The dashboard is live and actively monitoring real API endpoints right now.</p>
+    <div class="hero-actions">
+      <a href="https://sentinelai.adityadeoli.com" target="_blank" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Dashboard
+      </a>
+      <a href="https://api.sentinelai.adityadeoli.com/docs" target="_blank" class="btn btn-secondary">
+        Explore API Docs
+      </a>
+      <a href="/" class="btn btn-purple">
+        ← Back to Portfolio
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    Built by Aditya Deoli &middot; <a href="/">adityadeoli.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

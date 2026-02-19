@@ -1,0 +1,41 @@
+# ── Python ──────────────────────────────────────────────────────────────
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ── Git ─────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── IDE / OS ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Docker (avoid recursive copy) ──────────────────────────────────────
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# ── Environment / secrets ──────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Testing / CI ────────────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+tests/
+
+# ── Misc ────────────────────────────────────────────────────────────────
+*.md
+LICENSE

@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+/* ── SentinelAI Design Tokens ──────────────────────────────────────────── */
+
+@theme {
+  /* Risk palette */
+  --color-risk-low: #22c55e;
+  --color-risk-low-bg: #f0fdf4;
+  --color-risk-low-border: #bbf7d0;
+  --color-risk-medium: #f59e0b;
+  --color-risk-medium-bg: #fffbeb;
+  --color-risk-medium-border: #fde68a;
+  --color-risk-high: #f97316;
+  --color-risk-high-bg: #fff7ed;
+  --color-risk-high-border: #fed7aa;
+  --color-risk-critical: #ef4444;
+  --color-risk-critical-bg: #fef2f2;
+  --color-risk-critical-border: #fecaca;
+
+  /* Neutral surface palette */
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f8fafc;
+  --color-surface-tertiary: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+
+  /* Text palette */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-tertiary: #94a3b8;
+
+  /* Accent */
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-light: #eef2ff;
+  --color-accent-muted: #c7d2fe;
+
+  /* Schema drift */
+  --color-drift-missing: #ef4444;
+  --color-drift-missing-bg: #fef2f2;
+  --color-drift-new: #3b82f6;
+  --color-drift-new-bg: #eff6ff;
+  --color-drift-type: #f59e0b;
+  --color-drift-type-bg: #fffbeb;
+
+  /* AI / Anomaly */
+  --color-ai-purple: #8b5cf6;
+  --color-ai-purple-bg: #f5f3ff;
+  --color-ai-purple-border: #ddd6fe;
+
+  /* Success */
+  --color-success: #10b981;
+  --color-success-bg: #ecfdf5;
+
+  /* Font */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", ui-monospace, monospace;
+}
+
+/* ── Base resets ───────────────────────────────────────────────────────── */
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  letter-spacing: -0.011em;
+}
+
+/* ── Scrollbar styling ─────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* ── Card shared styles ───────────────────────────────────────────────── */
+
+.card {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03),
+              0 1px 3px 0 rgb(0 0 0 / 0.02);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover:hover {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06),
+              0 2px 8px 0 rgb(0 0 0 / 0.04);
+  border-color: var(--color-accent-muted);
+}
+
+/* ── Form inputs ──────────────────────────────────────────────────────── */
+
+.input {
+  display: block;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  color: var(--color-text-primary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-light);
+}
+
+.input:hover:not(:focus) {
+  border-color: var(--color-text-tertiary);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Select arrow override */
+select.input {
+  cursor: pointer;
+}
+
+/* Textarea specifics */
+textarea.input {
+  min-height: 5rem;
+}
+
+/* ── Button base ──────────────────────────────────────────────────────── */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  background-color: var(--color-accent);
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: white;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgb(99 102 241 / 0.15);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-accent-hover);
+  box-shadow: 0 2px 4px 0 rgb(99 102 241 / 0.25);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-surface-tertiary);
+  border-color: var(--color-text-tertiary);
+  color: var(--color-text-primary);
+}
+
+/* ── Recharts tooltip styling ─────────────────────────────────────────── */
+
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+/* ── Subtle animations ────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(34 197 94 / 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgb(34 197 94 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(34 197 94 / 0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out forwards;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+/* ── Toast overrides ──────────────────────────────────────────────────── */
+
+[data-sonner-toaster] [data-type="success"] {
+  --toast-color: var(--color-success);
+}
