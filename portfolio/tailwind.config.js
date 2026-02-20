@@ -2,6 +2,21 @@
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
+  safelist: [
+    // Dynamic color classes used via template literals in components
+    'text-cyber-violet',
+    'text-cyber-cyan',
+    'text-cyber-pink',
+    'text-cyber-violet/60',
+    'text-cyber-cyan/60',
+    'text-cyber-pink/60',
+    'bg-cyber-violet/10',
+    'bg-cyber-cyan/10',
+    'bg-cyber-pink/10',
+    'border-cyber-violet/20',
+    'border-cyber-cyan/20',
+    'border-cyber-pink/20',
+  ],
   theme: {
     extend: {
       fontFamily: {

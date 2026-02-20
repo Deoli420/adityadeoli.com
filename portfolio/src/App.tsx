@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Hero } from './components/Hero';
+import { ImpactStrip } from './components/ImpactStrip';
+import { WhyHireMe } from './components/WhyHireMe';
 import { Projects } from './components/Projects';
-import { Experience } from './components/Experience';
-import { Skills } from './components/Skills';
-import { Certifications } from './components/Certifications';
+import { EngineeringThinking } from './components/EngineeringThinking';
+import { OperatingInChaos } from './components/OperatingInChaos';
+import { Web3Security } from './components/Web3Security';
+import { AIMLTesting } from './components/AIMLTesting';
+import { SystemSimulations } from './components/SystemSimulations';
 import { Testimonials } from './components/Testimonials';
-import { About } from './components/About';
+import { CTASection } from './components/CTASection';
+import { RecruiterShortcut } from './components/RecruiterShortcut';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { NotFound } from './components/NotFound';
@@ -32,12 +37,12 @@ function App() {
 
     // DevTools Easter Egg
     console.log("%c👀 Nice try inspector. But you're not the bug hunter here.", "color: #8e44ec; font-size: 20px; font-weight: bold;");
-    
+
     const detectDevTools = () => {
       const threshold = 160;
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-      
+
       if (widthThreshold || heightThreshold) {
         document.body.classList.add('glitch-effect');
       } else {
@@ -55,13 +60,21 @@ function App() {
       <div className="relative z-10">
         <ThemeToggle isDark={isDark} toggle={() => setIsDark(!isDark)} />
         <LaserPointerCat />
+        <RecruiterShortcut />
+
+        {/* ── Conversion Funnel ──────────────────────────────── */}
         <Hero />
-        <About />
+        <ImpactStrip />
+        <WhyHireMe />
         <Projects />
-        <Experience />
-        <Skills />
-        <Certifications />
+        <EngineeringThinking />
+        <OperatingInChaos />
+        <Web3Security />
+        <AIMLTesting />
+        <SystemSimulations />
         <Testimonials />
+        <CTASection />
+
         <Contact />
         <Footer />
       </div>
@@ -80,7 +93,7 @@ function App() {
           <Route path="/casestudies/:slug" element={<CaseStudyDetailWrapper />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="/404" element={<NotFound />} />
-          <Route path="*" element={<Navigate to="/404\" replace />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
         </Routes>
       </div>
     </Router>
@@ -90,11 +103,11 @@ function App() {
 const CaseStudyDetailWrapper: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const caseStudy = slug ? getCaseStudyBySlug(slug) : null;
-  
+
   if (!caseStudy) {
     return <Navigate to="/404" replace />;
   }
-  
+
   return <CaseStudyDetail caseStudy={caseStudy} />;
 };
 

@@ -6,9 +6,24 @@
   html {
     scroll-behavior: smooth;
   }
-  
+
   body {
     @apply bg-cyber-black text-white;
+  }
+
+  /* Global focus-visible for keyboard accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-cyber-cyan;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 
