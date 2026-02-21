@@ -4,6 +4,7 @@ import { Hero } from './components/Hero';
 import { ImpactStrip } from './components/ImpactStrip';
 import { WhyHireMe } from './components/WhyHireMe';
 import { Projects } from './components/Projects';
+import { FeaturedProjects } from './components/FeaturedProjects';
 import { EngineeringThinking } from './components/EngineeringThinking';
 import { OperatingInChaos } from './components/OperatingInChaos';
 import { Web3Security } from './components/Web3Security';
@@ -22,6 +23,8 @@ import { BlogPost } from './components/BlogPost';
 import { MagicalBugSwarm } from './components/MagicalBugSwarm';
 import { CaseStudiesList } from './components/casestudy/CaseStudiesList';
 import { CaseStudyDetail } from './components/casestudy/CaseStudyDetail';
+import { AutomationFrameworkLanding } from './components/AutomationFrameworkLanding';
+import { SentinelAILanding } from './components/SentinelAILanding';
 import { getCaseStudyBySlug } from './data/casestudies';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 
@@ -66,6 +69,7 @@ function App() {
         <Hero />
         <ImpactStrip />
         <WhyHireMe />
+        <FeaturedProjects />
         <Projects />
         <EngineeringThinking />
         <OperatingInChaos />
@@ -91,6 +95,8 @@ function App() {
           <Route path="/logs/:slug" element={<BlogPost />} />
           <Route path="/casestudies" element={<CaseStudiesList />} />
           <Route path="/casestudies/:slug" element={<CaseStudyDetailWrapper />} />
+          <Route path="/projects/sentinelai" element={<SentinelAILanding />} />
+          <Route path="/projects/automation-framework" element={<AutomationFrameworkLanding />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" replace />} />

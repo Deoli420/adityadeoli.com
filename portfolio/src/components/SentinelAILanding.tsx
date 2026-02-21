@@ -699,3 +699,7 @@ export const SentinelAILanding: React.FC = () => {
           </div>
         </section>
 
+      </div>
+    </div>
+  );
+};

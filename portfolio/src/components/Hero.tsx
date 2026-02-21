@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, FileText, Mail, Activity, BookOpen, CheckCircle } from 'lucide-react';
+import { Shield, FileText, Mail, Activity, BookOpen, CheckCircle, TestTubes } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const RECRUITER_TAGS = [
@@ -126,7 +126,14 @@ export const Hero: React.FC = () => {
               className="text-sm font-mono text-cyber-violet/70 hover:text-cyber-violet transition-colors flex items-center gap-1.5"
             >
               <Activity className="w-3.5 h-3.5" />
-              SentinelAI Project
+              SentinelAI
+            </Link>
+            <Link
+              to="/projects/automation-framework"
+              className="text-sm font-mono text-cyber-cyan/60 hover:text-cyber-cyan transition-colors flex items-center gap-1.5"
+            >
+              <TestTubes className="w-3.5 h-3.5" />
+              Automation Framework
             </Link>
             <Link
               to="/casestudies"

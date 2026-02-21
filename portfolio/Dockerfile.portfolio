@@ -8,9 +8,9 @@ COPY package.json package-lock.json ./
 # Install only production deps (express, cors)
 RUN npm ci --omit=dev
 
-# Copy server and built public files
+# Copy server and built assets
 COPY server.js ./
-COPY public/ ./public/
+COPY dist/ ./public/
 
 EXPOSE 3000
 

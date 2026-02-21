@@ -11,10 +11,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Resolve static directory: Docker copies dist/ → public/, locally use dist/
+const staticDir = fs.existsSync(path.join(__dirname, 'public', 'index.html'))
+  ? 'public'
+  : 'dist';
+
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(staticDir));
 
 // Store current test process
 let currentTestProcess = null;
@@ -151,14 +156,9 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// SentinelAI project showcase (static HTML page)
-app.get('/projects/sentinelai', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'projects', 'sentinelai.html'));
-});
-
 // SPA catch-all — serve index.html for any unmatched routes (client-side routing)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, staticDir, 'index.html'));
 });
 
 app.listen(PORT, () => {
