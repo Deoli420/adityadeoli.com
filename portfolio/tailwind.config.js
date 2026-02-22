@@ -37,10 +37,12 @@ export default {
     'bg-cyber-violet',
     'bg-cyber-cyan',
     'bg-cyber-pink',
+    'font-display',
   ],
   theme: {
     extend: {
       fontFamily: {
+        display: ['DEtechno Glitch', 'Space Grotesk', 'system-ui', 'sans-serif'],
         sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
         mono: ['Fira Code', 'monospace'],
       },

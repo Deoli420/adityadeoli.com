@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── LL DEtechno — self-hosted display font ──────────────────────── */
+@font-face {
+  font-family: 'DEtechno Glitch';
+  src: url('/fonts/LLDEtechnoGlitch-Bold0.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DEtechno Glitch';
+  src: url('/fonts/LLDEtechnoGlitch-Bold100.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DEtechno Glitch';
+  src: url('/fonts/LLDEtechnoGlitch-BoldItalic0.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DEtechno Twist';
+  src: url('/fonts/LLDEtechnoTwist-Bold0.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -9,6 +42,11 @@
 
   body {
     @apply bg-cyber-black text-white;
+  }
+
+  /* DEtechno display font on all headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'DEtechno Glitch', 'Space Grotesk', system-ui, sans-serif;
   }
 
   /* Global focus-visible for keyboard accessibility */
@@ -33,7 +71,7 @@
   }
   
   .cyber-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyber-violet to-cyber-cyan;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyber-violet to-cyber-cyan font-display;
   }
   
   .cyber-glow {
