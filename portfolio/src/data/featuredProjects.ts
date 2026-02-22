@@ -52,7 +52,7 @@ export const featuredProjects: FeaturedProject[] = [
     detailPath: '/projects/automation-framework',
     githubUrl: 'https://github.com/Deoli420/automation-framework',
     metrics: [
-      { label: 'Test Cases', value: '67' },
+      { label: 'Test Cases', value: '68' },
       { label: 'Page Objects', value: '4' },
       { label: 'API Services', value: '3' },
       { label: 'CI Jobs', value: '3' },
