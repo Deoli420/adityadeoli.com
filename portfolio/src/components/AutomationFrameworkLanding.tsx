@@ -112,14 +112,14 @@ export const AutomationFrameworkLanding: React.FC = () => {
       icon: <Monitor className="w-7 h-7" />,
       title: 'UI Automation',
       description:
-        'Selenium WebDriver with Page Object Model. Every page interaction goes through explicit waits, structured logging, and automatic screenshot capture on failure.',
+        'Selenium WebDriver with real DOM selectors verified against live Nykaa. Explicit waits (zero time.sleep), popup dismissal, parametrized data-driven tests, and automatic screenshot capture on failure.',
       color: 'cyber-cyan',
     },
     {
       icon: <TestTubes className="w-7 h-7" />,
       title: 'API Validation',
       description:
-        'Independent API layer validates the same data the UI shows. Schema validation, response time measurement, and cross-layer price consistency checks.',
+        'Real working endpoints (search suggestions, inventory, offers) with JSON schema validation, negative/boundary testing, and full HTTP method coverage (GET/POST/PUT/DELETE/HEAD).',
       color: 'cyber-violet',
     },
     {
@@ -153,7 +153,7 @@ export const AutomationFrameworkLanding: React.FC = () => {
   ];
 
   const techStack = [
-    { category: 'Test Framework', items: ['Python 3.13', 'PyTest', 'Selenium 4.27', 'pytest-html', 'pytest-xdist'], icon: <Code2 className="w-5 h-5" /> },
+    { category: 'Test Framework', items: ['Python 3.13', 'PyTest', 'Selenium 4.27', 'Allure', 'pytest-xdist'], icon: <Code2 className="w-5 h-5" /> },
     { category: 'API Layer', items: ['requests', 'jsonschema', 'Pydantic Settings', 'HTTPAdapter Retry'], icon: <Server className="w-5 h-5" /> },
     { category: 'Performance', items: ['Apache JMeter 5.6', 'Thread Groups', 'Listeners', 'HTML Dashboard'], icon: <Gauge className="w-5 h-5" /> },
     { category: 'Infrastructure', items: ['Docker Compose', 'Selenium Chrome', 'Nginx', 'DigitalOcean'], icon: <Container className="w-5 h-5" /> },
@@ -303,7 +303,7 @@ export const AutomationFrameworkLanding: React.FC = () => {
             {/* Quick stats strip */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Test Cases', value: '34' },
+                { label: 'Test Cases', value: '67' },
                 { label: 'Page Objects', value: '4' },
                 { label: 'API Services', value: '3' },
                 { label: 'CI Jobs', value: '3' },
@@ -512,35 +512,35 @@ export const AutomationFrameworkLanding: React.FC = () => {
             Test Coverage
           </motion.h2>
           <p className="text-center text-gray-400 mb-12 max-w-2xl mx-auto">
-            34 test cases across three layers — each validating different failure modes.
+            67 test cases across three layers — each validating different failure modes.
           </p>
 
           <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-6">
             {[
               {
                 title: 'UI Tests',
-                count: '17',
+                count: '31',
                 icon: <Monitor className="w-6 h-6" />,
                 color: 'cyber-cyan',
                 items: [
-                  'Search flow (query, results, random terms)',
-                  'Filter section presence & application',
-                  'Product page (title, price, image, add-to-bag)',
-                  'Cart (add, validate pricing, remove, empty)',
-                  'Price consistency (UI total vs item sum)',
+                  'Parametrized search (5 terms × multi-word queries)',
+                  'Filter presence & product page navigation',
+                  'Negative/boundary: XSS, 500-char, SQLi, gibberish',
+                  'Homepage: load, search bar, popup dismissal',
+                  'Cart tests with auth-required gating',
                 ],
               },
               {
                 title: 'API Tests',
-                count: '17',
+                count: '36',
                 icon: <Terminal className="w-6 h-6" />,
                 color: 'cyber-violet',
                 items: [
-                  'Search: response, timing, special chars, empty',
-                  'Product: endpoint, timing, nonexistent ID, slug',
-                  'Headers captured, client reusable',
-                  'SchemaValidator: valid/invalid data',
-                  'Price field & nested path validation',
+                  'Search suggestions & trending (real endpoints)',
+                  'Inventory + product offers schema validation',
+                  'HTTP methods: POST, PUT, DELETE, HEAD resilience',
+                  'Negative: SQLi, Unicode, long queries, HTML injection',
+                  'Parametrized data-driven with WAF-aware skips',
                 ],
               },
               {
@@ -634,7 +634,7 @@ export const AutomationFrameworkLanding: React.FC = () => {
 
           <div className="max-w-3xl mx-auto space-y-4">
             {[
-              { phase: 'Phase 1', label: 'Standalone Chrome', status: 'Current', detail: 'Single selenium/standalone-chrome container. pytest-xdist for parallel test execution. Good for up to ~30 tests.', color: 'text-green-400' },
+              { phase: 'Phase 1', label: 'Standalone Chrome', status: 'Current', detail: 'Single selenium/standalone-chrome container. pytest-xdist for parallel API execution. 67 tests with Allure reporting.', color: 'text-green-400' },
               { phase: 'Phase 2', label: 'Selenium Grid', status: 'Ready', detail: 'Replace standalone-chrome with selenium/hub + N chrome-node containers. Zero code changes — one env var switch.', color: 'text-cyber-cyan' },
               { phase: 'Phase 3', label: 'Multi-Browser', status: 'Designed', detail: 'DriverFactory already supports Chrome + Firefox. CI matrix strategy adds parallel browser testing.', color: 'text-cyber-violet' },
               { phase: 'Phase 4', label: 'Contract Testing', status: 'Planned', detail: 'Add Schemathesis or Pact tests in tests/contract/. Baseline schemas already exist in fixtures/.', color: 'text-cyber-pink' },
@@ -773,7 +773,7 @@ export const AutomationFrameworkLanding: React.FC = () => {
             </h2>
             <div className="space-y-3">
               {[
-                'Custom User-Agent identifies all traffic as automated portfolio project',
+                'Realistic User-Agent for compatibility; framework clearly documented as portfolio project',
                 'JMeter load capped at 5-10 users with 2-3 second think times',
                 'No login, payment, or account creation flows',
                 'No aggressive crawling or data scraping',

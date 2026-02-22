@@ -52,15 +52,15 @@ export const featuredProjects: FeaturedProject[] = [
     detailPath: '/projects/automation-framework',
     githubUrl: 'https://github.com/Deoli420/automation-framework',
     metrics: [
-      { label: 'Test Cases', value: '34' },
+      { label: 'Test Cases', value: '67' },
       { label: 'Page Objects', value: '4' },
       { label: 'API Services', value: '3' },
       { label: 'CI Jobs', value: '3' },
     ],
     techHighlights: ['Python', 'Selenium', 'PyTest', 'Docker', 'GitHub Actions', 'JMeter'],
     highlights: [
-      'Page Object Model with DriverFactory pattern and function-scoped isolation',
-      'Three-layer testing: UI, API validation, and performance benchmarks',
+      'Page Object Model with real DOM selectors, explicit waits, and Allure reporting',
+      'Parametrized + negative/boundary tests across UI, API, and performance layers',
       'Pre-built scaling path: Standalone → Grid → K8s with zero code changes',
     ],
   },
