@@ -1,0 +1,35 @@
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.venv/
+venv/
+
+# ── Node / Frontend ──────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.cache/
+
+# ── Environment & Secrets ────────────────────────────────────────────────
+.env
+*.env.local
+
+# ── IDE ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Docker ───────────────────────────────────────────────────────────────
+# Don't ignore Dockerfiles — they're part of the build
+
+# ── Misc ─────────────────────────────────────────────────────────────────
+*.log
+.bolt/
+.claude/
