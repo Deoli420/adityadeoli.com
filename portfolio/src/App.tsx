@@ -29,6 +29,7 @@ import { UnifiedAutomationAILanding } from './components/UnifiedAutomationAILand
 import { StrykerComplianceTemplate } from './components/StrykerComplianceTemplate';
 import { getCaseStudyBySlug } from './data/casestudies';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { ScrollToTop } from './components/ScrollToTop';
 import { useScrollHaptics } from './hooks/useScrollHaptics';
 
 function App() {
@@ -93,6 +94,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen bg-cyber-black">
         <MagicalBugSwarm />
         <Routes>
