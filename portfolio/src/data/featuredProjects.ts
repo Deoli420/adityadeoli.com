@@ -1,4 +1,4 @@
-import { Activity, TestTubes } from 'lucide-react';
+import { Activity, TestTubes, BrainCircuit } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface FeaturedProject {
@@ -62,6 +62,29 @@ export const featuredProjects: FeaturedProject[] = [
       'Page Object Model with real DOM selectors, explicit waits, and Allure reporting',
       'Parametrized + negative/boundary tests across UI, API, and performance layers',
       'Pre-built scaling path: Standalone → Grid → K8s with zero code changes',
+    ],
+  },
+  {
+    slug: 'unified-automation-ai',
+    title: 'Unified Automation + AI Validation',
+    tagline: 'Cross-Platform Framework with AI/ML Testing',
+    description:
+      'Enterprise-grade C#/.NET 8 framework unifying Web (Selenium), Mobile (Appium), and Desktop (FlaUI) automation with a dedicated AI/ML validation module — hallucination detection, bias testing, medical AI safety, and non-deterministic output scoring.',
+    accentColor: 'cyber-pink',
+    icon: BrainCircuit,
+    detailPath: '/projects/unified-automation-ai',
+    githubUrl: 'https://github.com/adityadeoli',
+    metrics: [
+      { label: 'C# Source Files', value: '48+' },
+      { label: 'AI Validators', value: '7' },
+      { label: 'Platforms', value: '4' },
+      { label: 'Test Suites', value: '12' },
+    ],
+    techHighlights: ['C#', '.NET 8', 'Selenium', 'Appium', 'FlaUI', 'NUnit', 'Serilog', 'OpenAI API'],
+    highlights: [
+      'Self-healing locators with fallback chains and cached healing for zero-flake tests',
+      'Medical AI validator: disclaimer enforcement, hallucination detection, dangerous pattern blocking',
+      'Cosine/Jaccard/Embedding similarity engine for non-deterministic LLM output scoring',
     ],
   },
 ];

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClipboardList, FileText, Mail, X, ChevronRight } from 'lucide-react';
+import { useHaptics } from '../hooks/useHaptics';
 
 const achievements = [
   'Founding QA \u2192 0 to 11M users',
@@ -12,6 +13,7 @@ const achievements = [
 
 export const RecruiterShortcut: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { trigger } = useHaptics();
 
   return (
     <>
@@ -91,6 +93,7 @@ export const RecruiterShortcut: React.FC = () => {
               <div className="flex gap-2">
                 <a
                   href="/resume.pdf"
+                  onClick={() => trigger('tap')}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-mono rounded border border-cyber-cyan/40 text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors"
                 >
                   <FileText className="w-3.5 h-3.5" />
@@ -98,6 +101,7 @@ export const RecruiterShortcut: React.FC = () => {
                 </a>
                 <a
                   href="mailto:adityadeoli@gmail.com"
+                  onClick={() => trigger('tap')}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-mono rounded bg-cyber-violet/20 border border-cyber-violet/40 text-cyber-violet hover:bg-cyber-violet/30 transition-colors"
                 >
                   <Mail className="w-3.5 h-3.5" />
@@ -179,6 +183,7 @@ export const RecruiterShortcut: React.FC = () => {
               <div className="flex gap-3">
                 <a
                   href="/resume.pdf"
+                  onClick={() => trigger('tap')}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-mono rounded border border-cyber-cyan/40 text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors"
                 >
                   <FileText className="w-4 h-4" />
@@ -186,6 +191,7 @@ export const RecruiterShortcut: React.FC = () => {
                 </a>
                 <a
                   href="mailto:adityadeoli@gmail.com"
+                  onClick={() => trigger('tap')}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-mono rounded bg-cyber-violet/20 border border-cyber-violet/40 text-cyber-violet hover:bg-cyber-violet/30 transition-colors"
                 >
                   <Mail className="w-4 h-4" />

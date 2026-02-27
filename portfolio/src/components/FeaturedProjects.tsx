@@ -1,10 +1,40 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ExternalLink, Globe, CheckCircle2, Code2 } from 'lucide-react';
 import { featuredProjects } from '../data/featuredProjects';
+import { useTilt } from '../hooks/useTilt';
+import { useHaptics } from '../hooks/useHaptics';
+
+/* ── Tilt-enabled project card ─────────────────────────── */
+const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => {
+  const { ref, rotateX, rotateY, scale } = useTilt({ maxTilt: 6, perspective: 900, scale: 1.015 });
+
+  return (
+    <motion.div
+      ref={ref}
+      style={{ rotateX, rotateY, scale, transformStyle: 'preserve-3d' }}
+      className={`relative ${className}`}
+    >
+      {/* Subtle glow that follows tilt */}
+      <motion.div
+        className="absolute inset-0 rounded-xl pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(142,68,236,0.12), transparent 40%)',
+        }}
+      />
+      {children}
+    </motion.div>
+  );
+};
 
 export const FeaturedProjects: React.FC = () => {
+  const { trigger } = useHaptics();
+
   return (
     <section id="featured-projects" className="py-20 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-cyber-black via-cyber-black/90 to-cyber-black" />
@@ -28,15 +58,16 @@ export const FeaturedProjects: React.FC = () => {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
           {featuredProjects.map((project, index) => {
             const Icon = project.icon;
+            const isLastOdd = index === featuredProjects.length - 1 && featuredProjects.length % 2 !== 0;
             return (
+              <TiltCard key={project.slug} className={`group ${isLastOdd ? 'lg:col-span-2 lg:max-w-[calc(50%-1rem)] lg:mx-auto' : ''}`}>
               <motion.div
-                key={project.slug}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.15 }}
                 whileHover={{ y: -6 }}
-                className="bg-cyber-black/50 backdrop-blur rounded-xl overflow-hidden cyber-border group"
+                className="bg-cyber-black/50 backdrop-blur rounded-xl overflow-hidden cyber-border"
               >
                 {/* Accent bar */}
                 <div className={`h-1 w-full bg-gradient-to-r from-${project.accentColor}/20 via-${project.accentColor} to-${project.accentColor}/20`} />
@@ -101,6 +132,7 @@ export const FeaturedProjects: React.FC = () => {
                   <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-800/50">
                     <Link
                       to={project.detailPath}
+                      onClick={() => trigger('tap')}
                       className={`inline-flex items-center gap-2 px-5 py-2.5 bg-${project.accentColor} text-cyber-black font-semibold rounded-md hover:opacity-90 transition-opacity text-sm`}
                     >
                       Explore Project
@@ -129,6 +161,7 @@ export const FeaturedProjects: React.FC = () => {
                   </div>
                 </div>
               </motion.div>
+              </TiltCard>
             );
           })}
         </div>

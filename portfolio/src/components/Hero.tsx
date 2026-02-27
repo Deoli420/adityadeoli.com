@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, FileText, Mail, Activity, BookOpen, CheckCircle, TestTubes } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useHaptics } from '../hooks/useHaptics';
+
+const HeroScene = lazy(() => import('./HeroScene'));
 
 const RECRUITER_TAGS = [
   '11M+ Users',
@@ -12,8 +15,15 @@ const RECRUITER_TAGS = [
 ];
 
 export const Hero: React.FC = () => {
+  const { trigger } = useHaptics();
+
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      {/* 3D particle background */}
+      <Suspense fallback={null}>
+        <HeroScene />
+      </Suspense>
+
       {/* Background layers */}
       <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/3052361/pexels-photo-3052361.jpeg')] bg-cover bg-center opacity-5" />
       <div className="absolute inset-0 cyber-grid opacity-20" />
@@ -59,14 +69,11 @@ export const Hero: React.FC = () => {
             className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
           >
             <span className="cyber-text">
-              I build the safety net
+              I build frameworks that break your app
             </span>
             <br />
-            <span className="text-white">
-              between your product and your{' '}
-            </span>
             <span className="text-cyber-cyan animate-flicker">
-              11 million users.
+              before your users do.
             </span>
           </motion.h1>
 
@@ -99,6 +106,7 @@ export const Hero: React.FC = () => {
           >
             <a
               href="/resume.pdf"
+              onClick={() => trigger('tap')}
               className="px-7 py-3 bg-cyber-violet text-white font-semibold rounded-md hover:bg-cyber-purple transition-colors cyber-glow flex items-center gap-2"
             >
               <FileText className="w-5 h-5" />
@@ -107,6 +115,7 @@ export const Hero: React.FC = () => {
 
             <a
               href="#contact"
+              onClick={() => trigger('tap')}
               className="px-7 py-3 bg-cyber-cyan text-cyber-black font-semibold rounded-md hover:bg-cyber-cyan/80 transition-colors cyber-glow flex items-center gap-2"
             >
               <Mail className="w-5 h-5" />

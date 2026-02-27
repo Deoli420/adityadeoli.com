@@ -25,8 +25,11 @@ import { CaseStudiesList } from './components/casestudy/CaseStudiesList';
 import { CaseStudyDetail } from './components/casestudy/CaseStudyDetail';
 import { AutomationFrameworkLanding } from './components/AutomationFrameworkLanding';
 import { SentinelAILanding } from './components/SentinelAILanding';
+import { UnifiedAutomationAILanding } from './components/UnifiedAutomationAILanding';
+import { StrykerComplianceTemplate } from './components/StrykerComplianceTemplate';
 import { getCaseStudyBySlug } from './data/casestudies';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { useScrollHaptics } from './hooks/useScrollHaptics';
 
 function App() {
   const [isDark, setIsDark] = useState(true);
@@ -57,7 +60,9 @@ function App() {
     return () => window.removeEventListener('resize', detectDevTools);
   }, [isDark]);
 
-  const MainContent = () => (
+  const MainContent = () => {
+    useScrollHaptics(['impact', 'cta']);
+    return (
     <>
       <div className="fixed inset-0 bg-[url('https://images.pexels.com/photos/8721318/pexels-photo-8721318.jpeg')] bg-cover bg-center opacity-20 pointer-events-none" />
       <div className="relative z-10">
@@ -83,7 +88,8 @@ function App() {
         <Footer />
       </div>
     </>
-  );
+    );
+  };
 
   return (
     <Router>
@@ -97,6 +103,8 @@ function App() {
           <Route path="/casestudies/:slug" element={<CaseStudyDetailWrapper />} />
           <Route path="/projects/sentinelai" element={<SentinelAILanding />} />
           <Route path="/projects/automation-framework" element={<AutomationFrameworkLanding />} />
+          <Route path="/projects/unified-automation-ai" element={<UnifiedAutomationAILanding />} />
+          <Route path="/projects/stryker-compliance-template" element={<StrykerComplianceTemplate />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" replace />} />

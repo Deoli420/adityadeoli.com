@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Linkedin, Github, Send, Scroll, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useHaptics } from '../hooks/useHaptics';
 
 export const Contact: React.FC = () => {
+  const { trigger } = useHaptics();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -368,6 +370,7 @@ ${formData.message}`;
               <button
                 type="submit"
                 disabled={isSubmitting || integrityScore < 60}
+                onClick={() => trigger('tap')}
                 className="w-full px-6 py-3 bg-cyber-violet text-white rounded-md hover:bg-cyber-purple transition-colors cyber-glow flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (

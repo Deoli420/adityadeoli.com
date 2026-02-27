@@ -1,10 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Mail, FileText, Linkedin } from 'lucide-react';
+import { useHaptics } from '../hooks/useHaptics';
 
 export const CTASection: React.FC = () => {
+  const { trigger } = useHaptics();
+
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section id="cta" className="py-24 relative overflow-hidden">
       {/* Gradient background: violet to purple at low opacity */}
       <div className="absolute inset-0 bg-gradient-to-br from-cyber-violet/[0.06] via-cyber-purple/[0.04] to-cyber-violet/[0.06]" />
       <div className="absolute inset-0 bg-cyber-black/80" />
@@ -45,6 +48,7 @@ export const CTASection: React.FC = () => {
             {/* Primary: Email */}
             <a
               href="mailto:adityadeoli@gmail.com"
+              onClick={() => trigger('tap')}
               className="group px-8 py-3.5 bg-cyber-violet text-white font-semibold rounded-md hover:bg-cyber-purple transition-all cyber-glow flex items-center gap-2.5 text-base shadow-lg shadow-cyber-violet/20 hover:shadow-cyber-violet/40"
             >
               <Mail className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -54,6 +58,7 @@ export const CTASection: React.FC = () => {
             {/* Secondary: Resume */}
             <a
               href="/resume.pdf"
+              onClick={() => trigger('tap')}
               className="px-7 py-3.5 bg-cyber-black/60 border border-cyber-cyan text-cyber-cyan font-semibold rounded-md hover:bg-cyber-cyan/10 transition-colors flex items-center gap-2.5 text-base"
             >
               <FileText className="w-5 h-5" />
@@ -65,6 +70,7 @@ export const CTASection: React.FC = () => {
               href="https://linkedin.com/in/adityadeoli"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trigger('tap')}
               className="px-7 py-3.5 border border-cyber-violet/50 text-cyber-violet font-semibold rounded-md hover:bg-cyber-violet/10 hover:border-cyber-violet transition-colors flex items-center gap-2.5 text-base"
             >
               <Linkedin className="w-5 h-5" />
