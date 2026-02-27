@@ -257,7 +257,7 @@ ${formData.message}`;
               </a>
               
               <a
-                href="https://github.com/adityadeoli"
+                href="https://github.com/deoli420"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 text-gray-400 hover:text-cyber-cyan transition-colors"

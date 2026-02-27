@@ -26,7 +26,7 @@ export const featuredProjects: FeaturedProject[] = [
     accentColor: 'cyber-violet',
     icon: Activity,
     detailPath: '/projects/sentinelai',
-    githubUrl: 'https://github.com/adityadeoli',
+    githubUrl: 'https://github.com/deoli420',
     liveUrl: 'https://sentinelai.adityadeoli.com',
     metrics: [
       { label: 'Lines of Code', value: '12,000+' },
@@ -73,7 +73,7 @@ export const featuredProjects: FeaturedProject[] = [
     accentColor: 'cyber-pink',
     icon: BrainCircuit,
     detailPath: '/projects/unified-automation-ai',
-    githubUrl: 'https://github.com/adityadeoli',
+    githubUrl: 'https://github.com/Deoli420/unified-automation-ai',
     metrics: [
       { label: 'C# Source Files', value: '48+' },
       { label: 'AI Validators', value: '7' },

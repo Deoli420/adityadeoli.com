@@ -298,7 +298,7 @@ export const SentinelAILanding: React.FC = () => {
                 View Live Dashboard
               </a>
               <a
-                href="https://github.com/adityadeoli"
+                href="https://github.com/deoli420"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-8 py-3 border-2 border-cyber-cyan text-cyber-cyan rounded-md hover:bg-cyber-cyan hover:text-cyber-black transition-colors cyber-glow flex items-center gap-2 text-lg"

@@ -299,7 +299,7 @@ export const UnifiedAutomationAILanding: React.FC = () => {
               Back to Portfolio
             </Link>
             <a
-              href="https://github.com/adityadeoli"
+              href="https://github.com/Deoli420/unified-automation-ai"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-cyber-pink text-white rounded-lg hover:opacity-90 transition-opacity cyber-glow"
@@ -343,7 +343,7 @@ export const UnifiedAutomationAILanding: React.FC = () => {
 
             <div className="flex flex-wrap justify-center gap-4 mb-16">
               <a
-                href="https://github.com/adityadeoli"
+                href="https://github.com/Deoli420/unified-automation-ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-8 py-3 bg-cyber-pink text-white rounded-md hover:opacity-90 transition-opacity cyber-glow flex items-center gap-2 text-lg"
@@ -750,7 +750,7 @@ export const UnifiedAutomationAILanding: React.FC = () => {
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <a
-                href="https://github.com/adityadeoli"
+                href="https://github.com/Deoli420/unified-automation-ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-8 py-3 bg-cyber-pink text-white rounded-md hover:opacity-90 transition-opacity cyber-glow flex items-center gap-2"
