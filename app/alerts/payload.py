@@ -96,3 +96,36 @@ def build_alert_payload(
         }
 
     return payload
+
+
+def build_sla_breach_payload(
+    *,
+    endpoint_id: str,
+    endpoint_name: str,
+    endpoint_url: str,
+    endpoint_method: str,
+    uptime_percent: float,
+    sla_target: float,
+    window: str,
+    total_runs: int,
+    successful_runs: int,
+) -> dict[str, Any]:
+    """Build a webhook payload for an SLA breach event."""
+    return {
+        "event": "sla_breach",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "endpoint": {
+            "id": endpoint_id,
+            "name": endpoint_name,
+            "url": endpoint_url,
+            "method": endpoint_method,
+        },
+        "sla": {
+            "uptime_percent": uptime_percent,
+            "sla_target": sla_target,
+            "window": window,
+            "total_runs": total_runs,
+            "successful_runs": successful_runs,
+            "deficit_percent": round(sla_target - uptime_percent, 4),
+        },
+    }

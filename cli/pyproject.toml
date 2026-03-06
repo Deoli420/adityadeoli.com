@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinel-cli"
+version = "0.1.0"
+description = "SentinelAI CLI — monitor, debug, and export API health from the command line."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Aditya Deoli"}]
+
+dependencies = [
+    "click>=8.1",
+    "httpx>=0.25",
+    "rich>=13.0",
+    "pydantic>=2.0",
+]
+
+[project.scripts]
+sentinel = "sentinel.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sentinel*"]

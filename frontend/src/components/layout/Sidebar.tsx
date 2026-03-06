@@ -6,6 +6,10 @@ import {
   LayoutDashboard,
   Plus,
   Zap,
+  AlertTriangle,
+  Download,
+  Brain,
+  Shield,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -14,6 +18,10 @@ import clsx from "clsx";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/incidents", label: "Incidents", icon: AlertTriangle },
+  { to: "/ai-telemetry", label: "AI Telemetry", icon: Brain },
+  { to: "/security", label: "Security", icon: Shield },
+  { to: "/export", label: "Export", icon: Download },
   { to: "/endpoints/new", label: "Add Endpoint", icon: Plus },
   { to: "/api-tester", label: "API Tester", icon: Zap },
 ] as const;

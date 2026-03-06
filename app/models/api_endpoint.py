@@ -37,6 +37,7 @@ class ApiEndpoint(Base):
     auth_config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     body_config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     advanced_config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    openapi_spec: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     config_version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default="1"
     )
@@ -54,4 +55,10 @@ class ApiEndpoint(Base):
     )
     runs: Mapped[list["ApiRun"]] = relationship(  # noqa: F821
         back_populates="endpoint", passive_deletes=True, cascade="all, delete-orphan"
+    )
+    sla: Mapped[Optional["EndpointSLA"]] = relationship(  # noqa: F821
+        back_populates="endpoint", uselist=False, passive_deletes=True, cascade="all, delete-orphan"
+    )
+    alert_rules: Mapped[list["AlertRule"]] = relationship(  # noqa: F821
+        passive_deletes=True, cascade="all, delete-orphan"
     )

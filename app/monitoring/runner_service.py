@@ -27,18 +27,26 @@ from typing import Any, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.llm_client import CallTelemetry
+from app.models.ai_telemetry import AiTelemetryRecord
 from app.models.anomaly import Anomaly
 from app.models.api_run import ApiRun
 from app.models.risk_score import RiskScore
+from app.models.security_finding import SecurityFinding
 from app.monitoring.anomaly_engine import AnomalyEngine, AnomalyResult
 from app.monitoring.api_runner import ApiRunner, RunnerConfig
+from app.monitoring.contract_validator import ContractResult, contract_validator
+from app.monitoring.credential_scanner import ScanResult, credential_scanner
 from app.monitoring.performance_tracker import PerformanceResult, PerformanceTracker
 from app.monitoring.risk_engine import RiskEngine, RiskResult
 from app.monitoring.schema_validator import DriftAnalysis, SchemaValidator
+from app.repositories.ai_telemetry import AiTelemetryRepository
 from app.repositories.anomaly import AnomalyRepository
 from app.repositories.api_endpoint import ApiEndpointRepository
 from app.repositories.api_run import ApiRunRepository
 from app.repositories.risk_score import RiskScoreRepository
+from app.repositories.security_finding import SecurityFindingRepository
+from app.services.schema_snapshot import snapshot_if_changed
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +60,8 @@ class PipelineResult:
     schema_drift: Optional[DriftAnalysis] = None
     anomaly: Optional[AnomalyResult] = None
     risk: Optional[RiskResult] = None
+    security_scan: Optional[ScanResult] = None
+    contract: Optional[ContractResult] = None
 
     # Endpoint metadata — avoids extra DB queries downstream (alerts, logs)
     endpoint_name: str = ""
@@ -78,10 +88,13 @@ class RunnerService:
         risk_engine: RiskEngine | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
+        self._session = session
         self._endpoint_repo = ApiEndpointRepository(session)
         self._run_repo = ApiRunRepository(session)
         self._anomaly_repo = AnomalyRepository(session)
         self._risk_repo = RiskScoreRepository(session)
+        self._telemetry_repo = AiTelemetryRepository(session)
+        self._security_repo = SecurityFindingRepository(session)
         self._runner = runner
         self._tracker = tracker or PerformanceTracker()
         self._validator = validator or SchemaValidator()
@@ -269,6 +282,61 @@ class RunnerService:
                 drift.drift_count,
             )
 
+        # 5b. Auto-snapshot on schema change
+        try:
+            await snapshot_if_changed(
+                endpoint.id,
+                endpoint.organization_id,
+                result.response_body,
+                self._session,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to create schema snapshot for %s", endpoint.name
+            )
+
+        # 5c. Credential leak scan
+        security_scan: ScanResult = credential_scanner.scan(result.response_body)
+        if security_scan.has_findings:
+            logger.warning(
+                "Credential scan for %s: %d finding(s), max severity=%s",
+                endpoint.name,
+                security_scan.total_findings,
+                security_scan.max_severity,
+            )
+            findings_to_persist = [
+                SecurityFinding(
+                    api_run_id=saved_run.id,
+                    endpoint_id=endpoint.id,
+                    organization_id=endpoint.organization_id,
+                    finding_type=f.finding_type,
+                    pattern_name=f.pattern_name,
+                    field_path=f.field_path,
+                    severity=f.severity,
+                    redacted_preview=f.redacted_preview,
+                    match_count=f.match_count,
+                )
+                for f in security_scan.findings
+            ]
+            await self._security_repo.create_many(findings_to_persist)
+
+        # 5d. Contract validation (if OpenAPI spec exists)
+        contract: ContractResult | None = None
+        if getattr(endpoint, "openapi_spec", None):
+            contract = contract_validator.validate(
+                openapi_spec=endpoint.openapi_spec,
+                url=endpoint.url,
+                method=endpoint.method,
+                status_code=result.status_code,
+                response_body=result.response_body,
+            )
+            if contract.has_violations:
+                logger.warning(
+                    "Contract violations for %s: %d violation(s)",
+                    endpoint.name,
+                    contract.total_violations,
+                )
+
         # 6. Historical failure rate (shared by anomaly engine and risk scorer)
         failure_rate = await self._run_repo.get_failure_rate(endpoint.id)
 
@@ -297,6 +365,31 @@ class RunnerService:
                 anomaly.ai_called,
                 f" (skipped: {anomaly.skipped_reason})" if anomaly.skipped_reason else "",
             )
+
+            # 7b. Persist AI telemetry if an LLM call was made
+            if anomaly.ai_called and self._anomaly_engine._llm.last_call_telemetry:
+                telem = self._anomaly_engine._llm.last_call_telemetry
+                await self._telemetry_repo.create(
+                    AiTelemetryRecord(
+                        endpoint_id=endpoint.id,
+                        organization_id=endpoint.organization_id,
+                        model_name=telem.model_name,
+                        prompt_tokens=telem.prompt_tokens,
+                        completion_tokens=telem.completion_tokens,
+                        total_tokens=telem.total_tokens,
+                        latency_ms=telem.latency_ms,
+                        success=telem.success,
+                        cost_usd=telem.cost_usd,
+                        error_message=telem.error_message,
+                    )
+                )
+                logger.info(
+                    "AI telemetry persisted for %s (tokens=%d cost=$%.6f latency=%.0fms)",
+                    endpoint.name,
+                    telem.total_tokens,
+                    telem.cost_usd,
+                    telem.latency_ms,
+                )
 
             # 8. Persist anomaly record if AI detected one
             if anomaly.anomaly_detected:
@@ -328,10 +421,11 @@ class RunnerService:
             drift=drift,
             anomaly=anomaly,
             failure_rate_percent=failure_rate,
+            security_scan=security_scan,
         )
 
         logger.info(
-            "Risk for %s: score=%.1f level=%s [status=%.0f perf=%.0f drift=%.0f ai=%.0f hist=%.0f]",
+            "Risk for %s: score=%.1f level=%s [status=%.0f perf=%.0f drift=%.0f ai=%.0f sec=%.0f hist=%.0f]",
             endpoint.name,
             risk.calculated_score,
             risk.risk_level,
@@ -339,6 +433,7 @@ class RunnerService:
             risk.performance_score,
             risk.drift_score,
             risk.ai_score,
+            risk.security_score,
             risk.history_score,
         )
 
@@ -356,6 +451,8 @@ class RunnerService:
             schema_drift=drift,
             anomaly=anomaly,
             risk=risk,
+            security_scan=security_scan,
+            contract=contract,
             endpoint_name=endpoint.name,
             endpoint_url=endpoint.url,
             endpoint_method=endpoint.method,

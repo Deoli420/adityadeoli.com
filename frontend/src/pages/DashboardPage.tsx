@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Server,
   TrendingUp,
+  Shield,
   ChevronRight,
   ArrowUpRight,
   ArrowDownRight,
@@ -17,14 +18,18 @@ import {
   useEndpointRuns,
 } from "@/hooks/useEndpointDetails.ts";
 import type { DashboardStats } from "@/services/endpointsService.ts";
-import { StatCard } from "@/components/common/StatCard.tsx";
 import { SkeletonCard, Skeleton } from "@/components/common/Skeleton.tsx";
 import { EmptyState } from "@/components/common/EmptyState.tsx";
 import { ErrorState } from "@/components/common/ErrorState.tsx";
 import { RiskBadge } from "@/components/common/RiskBadge.tsx";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist.tsx";
+import { ResponseTrendsChart } from "@/components/dashboard/ResponseTrendsChart.tsx";
+import { TopFailuresWidget } from "@/components/dashboard/TopFailuresWidget.tsx";
+import { RiskDistributionChart } from "@/components/dashboard/RiskDistributionChart.tsx";
+import { UptimeOverview } from "@/components/dashboard/UptimeOverview.tsx";
 import { formatMethod, timeAgo, formatMs } from "@/utils/formatters.ts";
 import { scoreToLevel } from "@/utils/riskUtils.ts";
-import type { ApiEndpoint } from "@/types/index.ts";
+import type { ApiEndpoint, ApiRunSummary } from "@/types/index.ts";
 import clsx from "clsx";
 
 /**
@@ -32,9 +37,8 @@ import clsx from "clsx";
  *
  * Structure:
  *   1. KPI stat cards row (endpoints, active monitors, anomalies 24h, avg risk)
- *   2. Endpoint table with inline risk badges and latency indicators
- *
- * Each table row fetches its own latest risk score + runs via React Query.
+ *   2. Chart widgets (trends, failures, risk distribution, uptime)
+ *   3. Endpoint table with inline risk badges, latency indicators, and health strip
  */
 const METHOD_OPTIONS = ["ALL", "GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
@@ -85,6 +89,9 @@ export function DashboardPage() {
         </Link>
       </div>
 
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist />
+
       {/* KPI Row */}
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -94,6 +101,20 @@ export function DashboardPage() {
         </div>
       ) : (
         <DashboardKPIs stats={stats ?? null} endpointCount={endpointCount} />
+      )}
+
+      {/* Chart Widgets */}
+      {!isLoading && endpoints && endpoints.length > 0 && (
+        <>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <ResponseTrendsChart />
+            <TopFailuresWidget />
+          </div>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <RiskDistributionChart />
+            <UptimeOverview />
+          </div>
+        </>
       )}
 
       {/* Endpoint Table */}
@@ -180,6 +201,7 @@ export function DashboardPage() {
                   <th className="px-5 py-2.5">Risk</th>
                   <th className="px-5 py-2.5">Last Latency</th>
                   <th className="px-5 py-2.5">Status</th>
+                  <th className="px-5 py-2.5">Recent</th>
                   <th className="px-5 py-2.5">Last Run</th>
                   <th className="w-8" />
                 </tr>
@@ -212,38 +234,127 @@ function DashboardKPIs({
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard
-        label="Total Endpoints"
-        value={endpointCount}
-        icon={<Server className="h-4 w-4" />}
-      />
-      <StatCard
-        label="Active Monitors"
-        value={endpointCount}
-        subValue="All active"
-        icon={<Activity className="h-4 w-4" />}
-        accent="success"
-      />
-      <StatCard
-        label="Anomalies (24h)"
-        value={anomalyCount}
-        subValue={anomalyCount === 0 ? "All clear" : `${anomalyCount} detected`}
-        icon={<AlertTriangle className="h-4 w-4" />}
-        accent={anomalyCount > 0 ? "warning" : undefined}
-      />
-      <StatCard
-        label="Avg Risk Score"
-        value={avgScore}
-        subValue={riskLevel === "LOW" ? "Healthy" : riskLevel}
-        icon={<TrendingUp className="h-4 w-4" />}
-        accent={
-          riskLevel === "CRITICAL" || riskLevel === "HIGH"
-            ? "danger"
-            : riskLevel === "MEDIUM"
-            ? "warning"
-            : undefined
-        }
-      />
+      {/* Total Endpoints */}
+      <div className="card p-5">
+        <div className="flex items-start justify-between">
+          <p className="text-[11px] font-medium text-text-tertiary uppercase tracking-wider">
+            Total Endpoints
+          </p>
+          <span className="text-text-tertiary">
+            <Server className="h-4 w-4" />
+          </span>
+        </div>
+        <p className="mt-2 text-2xl font-semibold tabular-nums text-text-primary">
+          {endpointCount}
+        </p>
+        <p className="mt-1 text-[11px] text-text-secondary">
+          {endpointCount === 1 ? "1 endpoint" : `${endpointCount} endpoints`} being tracked
+        </p>
+      </div>
+
+      {/* Active Monitors */}
+      <div className="card p-5">
+        <div className="flex items-start justify-between">
+          <p className="text-[11px] font-medium text-text-tertiary uppercase tracking-wider">
+            Active Monitors
+          </p>
+          <span className="text-risk-low">
+            <Activity className="h-4 w-4" />
+          </span>
+        </div>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="text-2xl font-semibold tabular-nums text-risk-low">
+            {endpointCount}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-risk-low-bg px-1.5 py-0.5 text-[10px] font-medium text-risk-low border border-risk-low-border">
+            <span className="h-1 w-1 rounded-full bg-risk-low animate-pulse-ring" />
+            Live
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] text-text-secondary">All monitors active</p>
+      </div>
+
+      {/* Anomalies (24h) */}
+      <div className="card p-5">
+        <div className="flex items-start justify-between">
+          <p className="text-[11px] font-medium text-text-tertiary uppercase tracking-wider">
+            Anomalies (24h)
+          </p>
+          <span className={anomalyCount > 0 ? "text-risk-medium" : "text-text-tertiary"}>
+            <AlertTriangle className="h-4 w-4" />
+          </span>
+        </div>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span
+            className={clsx(
+              "text-2xl font-semibold tabular-nums",
+              anomalyCount > 0 ? "text-risk-medium" : "text-text-primary",
+            )}
+          >
+            {anomalyCount}
+          </span>
+          {anomalyCount === 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-risk-low-bg px-1.5 py-0.5 text-[10px] font-medium text-risk-low border border-risk-low-border">
+              <Shield className="h-2.5 w-2.5" />
+              Clear
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-[11px] text-text-secondary">
+          {anomalyCount === 0 ? "No anomalies detected" : `${anomalyCount} detected in last 24h`}
+        </p>
+      </div>
+
+      {/* Avg Risk Score */}
+      <div className="card p-5">
+        <div className="flex items-start justify-between">
+          <p className="text-[11px] font-medium text-text-tertiary uppercase tracking-wider">
+            Avg Risk Score
+          </p>
+          <span
+            className={
+              riskLevel === "CRITICAL" || riskLevel === "HIGH"
+                ? "text-risk-critical"
+                : riskLevel === "MEDIUM"
+                  ? "text-risk-medium"
+                  : "text-text-tertiary"
+            }
+          >
+            <TrendingUp className="h-4 w-4" />
+          </span>
+        </div>
+        <div className="mt-2 flex items-baseline gap-1">
+          <span
+            className={clsx(
+              "text-2xl font-semibold tabular-nums",
+              riskLevel === "CRITICAL" || riskLevel === "HIGH"
+                ? "text-risk-critical"
+                : riskLevel === "MEDIUM"
+                  ? "text-risk-medium"
+                  : "text-text-primary",
+            )}
+          >
+            {avgScore}
+          </span>
+          <span className="text-xs text-text-tertiary">/100</span>
+        </div>
+        {/* Mini risk bar */}
+        <div className="mt-2 h-1.5 w-full rounded-full bg-surface-tertiary overflow-hidden">
+          <div
+            className={clsx(
+              "h-full rounded-full transition-all duration-700",
+              riskLevel === "LOW" && "bg-risk-low",
+              riskLevel === "MEDIUM" && "bg-risk-medium",
+              riskLevel === "HIGH" && "bg-risk-high",
+              riskLevel === "CRITICAL" && "bg-risk-critical",
+            )}
+            style={{ width: `${Math.min(avgScore, 100)}%` }}
+          />
+        </div>
+        <p className="mt-1 text-[11px] text-text-secondary">
+          {riskLevel === "LOW" ? "Healthy" : riskLevel}
+        </p>
+      </div>
     </div>
   );
 }
@@ -324,6 +435,14 @@ function EndpointRow({ endpoint: ep }: { endpoint: ApiEndpoint }) {
           <span className="text-[11px] text-text-tertiary">Pending</span>
         )}
       </td>
+      {/* Mini health strip — last 5 runs as colored dots */}
+      <td className="px-5 py-3.5">
+        {runs && runs.length > 0 ? (
+          <HealthStrip runs={runs} />
+        ) : (
+          <span className="text-[11px] text-text-tertiary">{"\u2014"}</span>
+        )}
+      </td>
       <td className="px-5 py-3.5 text-xs text-text-secondary">
         {timeAgo(lastRun?.created_at ?? ep.created_at)}
       </td>
@@ -336,5 +455,31 @@ function EndpointRow({ endpoint: ep }: { endpoint: ApiEndpoint }) {
         </Link>
       </td>
     </tr>
+  );
+}
+
+/* ── Health Strip — mini sparkline of recent run statuses ──────────────── */
+
+function HealthStrip({ runs }: { runs: ApiRunSummary[] }) {
+  // Show up to 5 most recent runs as colored bars (oldest on left)
+  const recent = [...runs].slice(0, 5).reverse();
+
+  return (
+    <div className="flex items-center gap-px" title={`Last ${recent.length} runs`}>
+      {recent.map((run) => {
+        const code = run.status_code ?? 0;
+        const ok = code >= 200 && code < 400;
+        return (
+          <div
+            key={run.id}
+            className={clsx(
+              "h-4 w-1.5 rounded-sm transition-all",
+              ok ? "bg-risk-low" : "bg-risk-critical",
+            )}
+            title={`${code} \u00b7 ${formatMs(run.response_time_ms)}`}
+          />
+        );
+      })}
+    </div>
   );
 }

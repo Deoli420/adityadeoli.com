@@ -8,7 +8,12 @@ import {
   triggerMonitorRun,
 } from "@/services/endpointsService.ts";
 import type { MonitorRunResult } from "@/types/index.ts";
+import { useWsStore } from "@/stores/wsStore.ts";
 import toast from "react-hot-toast";
+
+/** Non-reactive read: returns polling interval based on WS connection state */
+const wsInterval = (fast: number, slow: number) => () =>
+  useWsStore.getState().connected ? slow : fast;
 
 /** Single endpoint by ID */
 export function useEndpoint(id: string) {
@@ -19,43 +24,43 @@ export function useEndpoint(id: string) {
   });
 }
 
-/** Recent runs for an endpoint */
+/** Recent runs — polls at 30s, slows to 120s when WS connected */
 export function useEndpointRuns(endpointId: string, limit = 50) {
   return useQuery({
     queryKey: ["endpoint-runs", endpointId, limit],
     queryFn: () => getEndpointRuns(endpointId, limit),
     enabled: !!endpointId,
-    refetchInterval: 30_000,
+    refetchInterval: wsInterval(30_000, 120_000),
   });
 }
 
-/** Anomalies for an endpoint */
+/** Anomalies — polls at 30s, slows to 120s when WS connected */
 export function useEndpointAnomalies(endpointId: string, limit = 50) {
   return useQuery({
     queryKey: ["endpoint-anomalies", endpointId, limit],
     queryFn: () => getEndpointAnomalies(endpointId, limit),
     enabled: !!endpointId,
-    refetchInterval: 30_000,
+    refetchInterval: wsInterval(30_000, 120_000),
   });
 }
 
-/** Latest risk score for an endpoint */
+/** Latest risk score — polls at 30s, slows to 120s when WS connected */
 export function useLatestRisk(endpointId: string) {
   return useQuery({
     queryKey: ["endpoint-risk", endpointId],
     queryFn: () => getLatestRiskScore(endpointId),
     enabled: !!endpointId,
-    refetchInterval: 30_000,
+    refetchInterval: wsInterval(30_000, 120_000),
   });
 }
 
-/** Performance readout (rolling stats) */
+/** Performance readout — polls at 30s, slows to 120s when WS connected */
 export function usePerformance(endpointId: string, window = 20) {
   return useQuery({
     queryKey: ["endpoint-performance", endpointId, window],
     queryFn: () => getPerformance(endpointId, window),
     enabled: !!endpointId,
-    refetchInterval: 30_000,
+    refetchInterval: wsInterval(30_000, 120_000),
   });
 }
 

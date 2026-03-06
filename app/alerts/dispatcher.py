@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.alerts.payload import build_alert_payload
+from app.alerts.payload import build_alert_payload, build_sla_breach_payload
 from app.alerts.webhook import webhook_client
 from app.core.config import settings
 from app.monitoring.runner_service import PipelineResult
@@ -90,3 +90,51 @@ async def maybe_alert(
         "risk_level": risk_level,
         "risk_score": risk.calculated_score if risk else 0,
     }
+
+
+async def maybe_alert_sla_breach(
+    *,
+    endpoint_id: str,
+    endpoint_name: str,
+    endpoint_url: str,
+    endpoint_method: str,
+    uptime_percent: float,
+    sla_target: float,
+    window: str,
+    total_runs: int,
+    successful_runs: int,
+) -> dict[str, Any]:
+    """
+    Send a webhook alert for an SLA breach.
+
+    This method **never raises**.
+    """
+    try:
+        if not webhook_client.available:
+            return {"alerted": False, "reason": "webhook_unavailable"}
+
+        payload = build_sla_breach_payload(
+            endpoint_id=endpoint_id,
+            endpoint_name=endpoint_name,
+            endpoint_url=endpoint_url,
+            endpoint_method=endpoint_method,
+            uptime_percent=uptime_percent,
+            sla_target=sla_target,
+            window=window,
+            total_runs=total_runs,
+            successful_runs=successful_runs,
+        )
+
+        logger.info(
+            "Dispatching SLA breach alert for %s: uptime=%.2f%% < target=%.2f%%",
+            endpoint_name,
+            uptime_percent,
+            sla_target,
+        )
+
+        success = await webhook_client.send(payload)
+        return {"alerted": True, "delivered": success, "event": "sla_breach"}
+
+    except Exception:
+        logger.exception("SLA breach alert dispatch failed for %s", endpoint_name)
+        return {"alerted": False, "reason": "exception"}

@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar.tsx";
 import { TopBar } from "@/components/layout/TopBar.tsx";
 import { useAppStore } from "@/stores/appStore.ts";
+import { useWebSocket } from "@/hooks/useWebSocket.ts";
 import clsx from "clsx";
 
 /**
@@ -20,6 +21,9 @@ import clsx from "clsx";
  */
 export function Layout() {
   const collapsed = useAppStore((s) => s.sidebarCollapsed);
+
+  // Initialize WebSocket connection for real-time events
+  useWebSocket();
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface-secondary">

@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from app.ai.llm_client import llm_client
 from app.alerts.webhook import webhook_client
 from app.api.v1.router import v1_router
+from app.api.v1.ws import router as ws_router
 from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.db.base import Base
@@ -73,3 +74,4 @@ app.add_middleware(
 )
 
 app.include_router(v1_router)
+app.include_router(ws_router, prefix="/api/v1")

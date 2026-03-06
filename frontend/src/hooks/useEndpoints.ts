@@ -7,15 +7,19 @@ import {
   getDashboardStats,
 } from "@/services/endpointsService.ts";
 import type { ApiEndpointCreate, ApiEndpointUpdate } from "@/types/index.ts";
+import { useWsStore } from "@/stores/wsStore.ts";
+
+const wsInterval = (fast: number, slow: number) => () =>
+  useWsStore.getState().connected ? slow : fast;
 
 export const ENDPOINTS_KEY = ["endpoints"] as const;
 
-/** Fetch all endpoints — auto-refetches every 30s */
+/** Fetch all endpoints — polls at 30s, slows to 120s when WS is connected */
 export function useEndpoints() {
   return useQuery({
     queryKey: ENDPOINTS_KEY,
     queryFn: getEndpoints,
-    refetchInterval: 30_000,
+    refetchInterval: wsInterval(30_000, 120_000),
     staleTime: 10_000,
   });
 }
@@ -43,12 +47,12 @@ export function useUpdateEndpoint() {
   });
 }
 
-/** Aggregate dashboard stats (anomalies 24h, avg risk, etc.) */
+/** Aggregate dashboard stats — polls at 30s, slows to 120s when WS is connected */
 export function useDashboardStats() {
   return useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: getDashboardStats,
-    refetchInterval: 30_000,
+    refetchInterval: wsInterval(30_000, 120_000),
     staleTime: 10_000,
   });
 }

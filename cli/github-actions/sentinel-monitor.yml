@@ -1,0 +1,42 @@
+# SentinelAI Monitoring — GitHub Actions Workflow
+#
+# Runs API health checks on every push or on a cron schedule.
+# Requires the following secrets:
+#   SENTINEL_EMAIL    - SentinelAI login email
+#   SENTINEL_PASSWORD - SentinelAI login password
+#   SENTINEL_API_URL  - (optional) API base URL
+#   SENTINEL_ENDPOINT - Endpoint ID or name to monitor
+
+name: SentinelAI Monitor
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/30 * * * *"  # Every 30 minutes
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Sentinel CLI
+        run: pip install git+https://github.com/adityadeoli/SentinelAI.git#subdirectory=cli
+
+      - name: Login
+        env:
+          SENTINEL_API_URL: ${{ secrets.SENTINEL_API_URL }}
+        run: |
+          sentinel login login \
+            --email "${{ secrets.SENTINEL_EMAIL }}" \
+            --password "${{ secrets.SENTINEL_PASSWORD }}" \
+            ${SENTINEL_API_URL:+--api-url "$SENTINEL_API_URL"}
+
+      - name: Health Check
+        run: sentinel health
+
+      - name: Run Monitor
+        run: sentinel endpoints run "${{ secrets.SENTINEL_ENDPOINT }}"
+
+      - name: Check Status
+        run: sentinel endpoints status "${{ secrets.SENTINEL_ENDPOINT }}"

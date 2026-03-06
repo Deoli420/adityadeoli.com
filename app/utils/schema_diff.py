@@ -18,6 +18,8 @@ This module is pure logic — no I/O, no database, no side effects.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -210,6 +212,30 @@ def _walk(
                 new=new,
                 type_mm=type_mm,
             )
+
+
+def compute_schema_hash(body: dict[str, Any]) -> str:
+    """
+    Compute a deterministic SHA-256 hash of a JSON body.
+
+    Uses canonical JSON (sorted keys, no whitespace) so the same logical
+    structure always produces the same hash.
+    """
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _count_fields(body: Any, *, _depth: int = 0) -> int:
+    """Recursively count the total number of fields in a nested dict."""
+    if not isinstance(body, dict):
+        return 0
+    count = len(body)
+    for value in body.values():
+        if isinstance(value, dict):
+            count += _count_fields(value, _depth=_depth + 1)
+        elif isinstance(value, list) and value and isinstance(value[0], dict):
+            count += _count_fields(value[0], _depth=_depth + 1)
+    return count
 
 
 def _type_label(value: Any) -> str:

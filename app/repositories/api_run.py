@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -79,3 +80,25 @@ class ApiRunRepository:
             )
         )
         return round((failures or 0) / total * 100, 2)
+
+    async def get_uptime_stats(
+        self,
+        endpoint_id: uuid.UUID,
+        *,
+        since: datetime,
+    ) -> tuple[int, int]:
+        """Return (total_runs, successful_runs) within a time window.
+
+        Used by the SLA service to compute uptime percentage.
+        """
+        base = [
+            ApiRun.endpoint_id == endpoint_id,
+            ApiRun.created_at >= since,
+        ]
+        total: int = await self._session.scalar(
+            select(func.count()).where(*base)
+        ) or 0
+        successes: int = await self._session.scalar(
+            select(func.count()).where(*base, ApiRun.is_success.is_(True))
+        ) or 0
+        return total, successes

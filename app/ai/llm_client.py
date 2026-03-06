@@ -6,6 +6,7 @@ Responsibilities:
   - Send structured prompts and parse JSON responses.
   - Retry with exponential backoff on transient failures.
   - Track metrics (latency, success/failure counts, token usage).
+  - Emit per-call telemetry for the AI FinOps dashboard.
   - Fail gracefully — never crash the monitoring pipeline.
 
 Design:
@@ -13,6 +14,8 @@ Design:
   - Returns parsed dict on success, None on any failure.
   - Retries up to MAX_RETRIES on timeout/network errors.
   - No retries on auth errors or invalid responses (non-recoverable).
+  - After each ``analyse()`` call, ``last_call_telemetry`` contains
+    per-call token/latency/cost data for the runner to persist.
 """
 
 from __future__ import annotations
@@ -28,6 +31,41 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+# ── Per-model cost table (USD per token) ──────────────────────────────────
+
+_COST_PER_TOKEN: dict[str, tuple[float, float]] = {
+    # (input_rate, output_rate) per token
+    "gpt-4o-mini": (0.15e-6, 0.60e-6),
+    "gpt-4o": (2.50e-6, 10.0e-6),
+    "gpt-4-turbo": (10.0e-6, 30.0e-6),
+    "gpt-3.5-turbo": (0.50e-6, 1.50e-6),
+}
+
+
+def _estimate_cost(
+    model: str, prompt_tokens: int, completion_tokens: int
+) -> float:
+    """Estimate USD cost for a single LLM call."""
+    rates = _COST_PER_TOKEN.get(model, _COST_PER_TOKEN["gpt-4o-mini"])
+    return prompt_tokens * rates[0] + completion_tokens * rates[1]
+
+
+# ── Per-call telemetry ────────────────────────────────────────────────────
+
+@dataclass
+class CallTelemetry:
+    """Per-call metadata emitted after every ``analyse()`` invocation."""
+
+    model_name: str
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    latency_ms: float = 0.0
+    success: bool = False
+    cost_usd: float = 0.0
+    error_message: str | None = None
 
 
 # ── Metrics tracking ───────────────────────────────────────────────────────
@@ -100,6 +138,8 @@ class LLMClient:
     def __init__(self) -> None:
         self._client: AsyncOpenAI | None = None
         self.metrics = LLMMetrics()
+        self.last_call_telemetry: CallTelemetry | None = None
+        self._last_usage: dict[str, int] | None = None  # from _do_call
 
     # ── lifecycle ────────────────────────────────────────────────────
 
@@ -145,20 +185,26 @@ class LLMClient:
         Retries up to MAX_RETRIES on transient failures with exponential
         backoff.  Returns ``None`` if all attempts fail.
 
+        After completion, ``self.last_call_telemetry`` contains per-call
+        token/latency/cost data for the pipeline to persist.
+
         This method **never raises**.
         """
         if self._client is None:
             logger.debug("LLM call skipped — client not available")
+            self.last_call_telemetry = None
             return None
 
         self.metrics.total_calls += 1
+        self._last_usage = None
         last_error: Exception | None = None
+        call_start = time.monotonic()
 
         for attempt in range(1, MAX_RETRIES + 1):
             start_time = time.monotonic()
             try:
                 result = await self._do_call(system_prompt, user_prompt)
-                elapsed_ms = (time.monotonic() - start_time) * 1000
+                elapsed_ms = (time.monotonic() - call_start) * 1000
 
                 if result is not None:
                     self.metrics.successful_calls += 1
@@ -168,11 +214,40 @@ class LLMClient:
                         attempt,
                         elapsed_ms,
                     )
+                    # Emit telemetry
+                    usage = self._last_usage or {}
+                    p_tok = usage.get("prompt_tokens", 0)
+                    c_tok = usage.get("completion_tokens", 0)
+                    t_tok = usage.get("total_tokens", 0)
+                    self.last_call_telemetry = CallTelemetry(
+                        model_name=settings.OPENAI_MODEL,
+                        prompt_tokens=p_tok,
+                        completion_tokens=c_tok,
+                        total_tokens=t_tok,
+                        latency_ms=round(elapsed_ms, 1),
+                        success=True,
+                        cost_usd=_estimate_cost(settings.OPENAI_MODEL, p_tok, c_tok),
+                    )
                     return result
 
                 # result is None — LLM returned unparseable response
+                elapsed_ms = (time.monotonic() - call_start) * 1000
                 self.metrics.failed_calls += 1
                 self.metrics.last_error = "Unparseable LLM response"
+                usage = self._last_usage or {}
+                p_tok = usage.get("prompt_tokens", 0)
+                c_tok = usage.get("completion_tokens", 0)
+                t_tok = usage.get("total_tokens", 0)
+                self.last_call_telemetry = CallTelemetry(
+                    model_name=settings.OPENAI_MODEL,
+                    prompt_tokens=p_tok,
+                    completion_tokens=c_tok,
+                    total_tokens=t_tok,
+                    latency_ms=round(elapsed_ms, 1),
+                    success=False,
+                    cost_usd=_estimate_cost(settings.OPENAI_MODEL, p_tok, c_tok),
+                    error_message="Unparseable LLM response",
+                )
                 return None  # Don't retry parse failures
 
             except Exception as exc:
@@ -196,8 +271,15 @@ class LLMClient:
                     continue
 
                 # Non-retryable or last attempt
+                total_elapsed = (time.monotonic() - call_start) * 1000
                 self.metrics.failed_calls += 1
                 self.metrics.last_error = str(exc)
+                self.last_call_telemetry = CallTelemetry(
+                    model_name=settings.OPENAI_MODEL,
+                    latency_ms=round(total_elapsed, 1),
+                    success=False,
+                    error_message=str(exc)[:500],
+                )
                 logger.error(
                     "LLM call failed permanently (attempt=%d/%d, latency=%.0fms): %s",
                     attempt,
@@ -208,8 +290,16 @@ class LLMClient:
                 return None
 
         # Should not reach here, but safety net
+        total_elapsed = (time.monotonic() - call_start) * 1000
         self.metrics.failed_calls += 1
-        self.metrics.last_error = str(last_error) if last_error else "Unknown"
+        err_msg = str(last_error) if last_error else "Unknown"
+        self.metrics.last_error = err_msg
+        self.last_call_telemetry = CallTelemetry(
+            model_name=settings.OPENAI_MODEL,
+            latency_ms=round(total_elapsed, 1),
+            success=False,
+            error_message=err_msg[:500],
+        )
         return None
 
     # ── internal ─────────────────────────────────────────────────────
@@ -250,10 +340,19 @@ class LLMClient:
             logger.warning("LLM returned non-dict JSON: %s", type(parsed))
             return None
 
-        # Track token usage
-        tokens = response.usage.total_tokens if response.usage else 0
-        self.metrics.total_tokens_used += tokens
-        logger.debug("LLM response parsed (%d tokens)", tokens)
+        # Track token usage (aggregate + per-call)
+        if response.usage:
+            self._last_usage = {
+                "prompt_tokens": response.usage.prompt_tokens or 0,
+                "completion_tokens": response.usage.completion_tokens or 0,
+                "total_tokens": response.usage.total_tokens or 0,
+            }
+            self.metrics.total_tokens_used += response.usage.total_tokens or 0
+        else:
+            self._last_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        logger.debug(
+            "LLM response parsed (%d tokens)", self._last_usage["total_tokens"]
+        )
 
         return parsed
 

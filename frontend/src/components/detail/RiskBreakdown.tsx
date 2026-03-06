@@ -99,9 +99,10 @@ export function RiskBreakdown({ risk, isLoading }: RiskBreakdownProps) {
 }
 
 const COMPONENTS = [
-  { label: "Status Code Match", weight: 35, color: "bg-accent" },
-  { label: "Performance (Latency)", weight: 25, color: "bg-risk-medium" },
-  { label: "Schema Drift", weight: 20, color: "bg-drift-new" },
+  { label: "Status Code Match", weight: 30, color: "bg-accent" },
+  { label: "Performance (Latency)", weight: 20, color: "bg-risk-medium" },
+  { label: "Schema Drift", weight: 15, color: "bg-drift-new" },
   { label: "AI Anomaly", weight: 15, color: "bg-ai-purple" },
+  { label: "Security (Cred Leaks)", weight: 15, color: "bg-red-500" },
   { label: "Historical Trend", weight: 5, color: "bg-text-tertiary" },
 ] as const;

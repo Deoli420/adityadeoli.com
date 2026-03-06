@@ -11,10 +11,11 @@ Scoring model (weighted composite):
   ┌────────────────────────┬────────┬─────────────────────────────────────┐
   │ Signal                 │ Weight │ Notes                               │
   ├────────────────────────┼────────┼─────────────────────────────────────┤
-  │ Status failure         │ 35     │ Binary: 0 or 35                     │
-  │ Performance deviation  │ 25     │ Scaled: deviation % mapped to 0–25  │
-  │ Schema drift           │ 20     │ Scaled: diff count mapped to 0–20   │
+  │ Status failure         │ 30     │ Binary: 0 or 30                     │
+  │ Performance deviation  │ 20     │ Scaled: deviation % mapped to 0–20  │
+  │ Schema drift           │ 15     │ Scaled: diff count mapped to 0–15   │
   │ AI severity            │ 15     │ Direct: severity_score * 0.15       │
+  │ Security (cred leaks)  │ 15     │ Scaled: finding count mapped 0–15   │
   │ Historical failure %   │  5     │ Scaled: failure rate mapped to 0–5  │
   └────────────────────────┴────────┴─────────────────────────────────────┘
 
@@ -38,6 +39,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.monitoring.anomaly_engine import AnomalyResult
+from app.monitoring.credential_scanner import ScanResult
 from app.monitoring.performance_tracker import PerformanceResult
 from app.monitoring.schema_validator import DriftAnalysis
 
@@ -64,6 +66,7 @@ class RiskResult:
     performance_score: float = 0.0
     drift_score: float = 0.0
     ai_score: float = 0.0
+    security_score: float = 0.0
     history_score: float = 0.0
 
 
@@ -83,6 +86,15 @@ def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
 
 
+# Severity multipliers — CRITICAL findings weigh more than MEDIUM
+_SEVERITY_MULTIPLIER = {
+    "CRITICAL": 1.0,
+    "HIGH": 0.7,
+    "MEDIUM": 0.4,
+    "LOW": 0.2,
+}
+
+
 class RiskEngine:
     """
     Stateless, deterministic risk scorer.
@@ -92,10 +104,11 @@ class RiskEngine:
     """
 
     # ── weights (must sum to 100) ───────────────────────────────────
-    W_STATUS = 35.0
-    W_PERFORMANCE = 25.0
-    W_DRIFT = 20.0
+    W_STATUS = 30.0
+    W_PERFORMANCE = 20.0
+    W_DRIFT = 15.0
     W_AI = 15.0
+    W_SECURITY = 15.0
     W_HISTORY = 5.0
 
     # ── scaling thresholds ──────────────────────────────────────────
@@ -104,6 +117,9 @@ class RiskEngine:
 
     # Drift: this many diffs → max score for that component
     DRIFT_MAX_DIFFS = 10
+
+    # Security: this many findings → max score for that component
+    SECURITY_MAX_FINDINGS = 5
 
     # History: failure rate >= this → max score for that component
     HISTORY_MAX_RATE = 50.0  # percent
@@ -116,6 +132,7 @@ class RiskEngine:
         drift: Optional[DriftAnalysis],
         anomaly: Optional[AnomalyResult],
         failure_rate_percent: float,
+        security_scan: Optional[ScanResult] = None,
     ) -> RiskResult:
         """
         Compute a deterministic risk score from pipeline signals.
@@ -151,7 +168,18 @@ class RiskEngine:
             # severity_score is 0–100; we scale to 0–W_AI
             ai_score = (anomaly.severity_score / 100.0) * self.W_AI
 
-        # ── 5. Historical failure rate component ────────────────────
+        # ── 5. Security / credential leak component ─────────────────
+        security_score = 0.0
+        if security_scan and security_scan.has_findings:
+            # Weight by severity — CRITICAL findings contribute more
+            weighted_count = sum(
+                _SEVERITY_MULTIPLIER.get(f.severity, 0.5)
+                for f in security_scan.findings
+            )
+            ratio = _clamp(weighted_count / self.SECURITY_MAX_FINDINGS, 0.0, 1.0)
+            security_score = ratio * self.W_SECURITY
+
+        # ── 6. Historical failure rate component ────────────────────
         history_score = 0.0
         if failure_rate_percent > 0:
             ratio = _clamp(failure_rate_percent / self.HISTORY_MAX_RATE, 0.0, 1.0)
@@ -159,7 +187,7 @@ class RiskEngine:
 
         # ── composite ──────────────────────────────────────────────
         total = _clamp(
-            status_score + performance_score + drift_score + ai_score + history_score,
+            status_score + performance_score + drift_score + ai_score + security_score + history_score,
             0.0,
             100.0,
         )
@@ -172,6 +200,7 @@ class RiskEngine:
             performance_score=round(performance_score, 1),
             drift_score=round(drift_score, 1),
             ai_score=round(ai_score, 1),
+            security_score=round(security_score, 1),
             history_score=round(history_score, 1),
         )
 

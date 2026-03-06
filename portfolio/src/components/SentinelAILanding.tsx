@@ -26,6 +26,12 @@ import {
   XCircle,
   ChevronDown,
   ChevronUp,
+  Brain,
+  Bug,
+  FileSearch,
+  ShieldAlert,
+  FileCode,
+  Gauge,
 } from 'lucide-react';
 
 /* ── Animated counter hook ─────────────────────────────────────────────── */
@@ -58,22 +64,27 @@ const ArchitectureDiagram: React.FC = () => {
     {
       label: 'Monitoring Layer',
       color: 'cyber-cyan',
-      items: ['Scheduled Probes', 'Multi-Region Pings', 'SSL / DNS Checks'],
+      items: ['Scheduled Probes', 'Contract Validation', 'Credential Scanning'],
     },
     {
       label: 'Analysis Engine',
       color: 'cyber-violet',
-      items: ['Anomaly Detection', 'Risk Scoring (0-100)', 'Failure-Rate Tracking'],
+      items: ['AI Anomaly Detection', '6-Signal Risk Scoring', 'Schema Drift Tracking'],
     },
     {
-      label: 'Alert Pipeline',
+      label: 'Security & Intelligence',
       color: 'cyber-pink',
-      items: ['n8n Webhooks', 'Threshold Rules', 'Escalation Chains'],
+      items: ['12-Pattern Leak Scanner', 'AI Debug Assistant', 'OpenAPI Compliance'],
     },
     {
-      label: 'Dashboard & API',
+      label: 'Alert & Incident Pipeline',
       color: 'cyber-cyan',
-      items: ['React SPA', 'FastAPI REST', 'JWT + RBAC Auth'],
+      items: ['7 Alert Conditions', 'Auto-Create/Resolve Incidents', 'n8n Webhooks'],
+    },
+    {
+      label: 'Dashboard, CLI & API',
+      color: 'cyber-violet',
+      items: ['React 19 SPA', '75+ REST Endpoints', 'Sentinel CLI (CI/CD)'],
     },
   ];
 
@@ -129,93 +140,120 @@ export const SentinelAILanding: React.FC = () => {
       icon: <Eye className="w-7 h-7" />,
       title: 'Real-Time Monitoring',
       description:
-        'Automated health probes hit your endpoints on a configurable schedule. Track response times, status codes, SSL validity, and DNS resolution — all from a single dashboard.',
+        'Automated health probes hit your endpoints on a configurable schedule. Track response times, status codes, and schema changes — with WebSocket live updates and adaptive polling.',
       color: 'cyber-cyan',
     },
     {
       icon: <AlertTriangle className="w-7 h-7" />,
-      title: 'Anomaly Detection',
+      title: 'AI Anomaly Detection',
       description:
-        'Statistical analysis flags abnormal latency spikes, unexpected status codes, and response-body deviations. Every run is scored against a rolling baseline so you catch regressions before users do.',
+        'Cost-gated LLM analysis flags abnormal latency spikes, unexpected status codes, and response deviations. Every run is scored against a rolling baseline — the AI is only invoked when signals warrant it ($0 when healthy).',
       color: 'cyber-violet',
     },
     {
       icon: <Shield className="w-7 h-7" />,
-      title: 'Risk Scoring Engine',
+      title: '6-Signal Risk Scoring',
       description:
-        'Each endpoint receives a composite risk score (0-100) computed from latency percentiles, failure rates, anomaly frequency, and certificate expiry. Scores feed into a four-tier severity system: LOW → MEDIUM → HIGH → CRITICAL.',
+        'Each endpoint receives a composite risk score (0-100) computed from status, performance, schema drift, AI severity, security findings, and failure history. Scores feed into four-tier severity: LOW → MEDIUM → HIGH → CRITICAL.',
       color: 'cyber-pink',
     },
     {
-      icon: <Bell className="w-7 h-7" />,
-      title: 'Intelligent Alerting',
+      icon: <ShieldAlert className="w-7 h-7" />,
+      title: 'Credential Leak Detection',
       description:
-        'Configurable alert rules powered by n8n webhook integrations. Set thresholds per-endpoint, define escalation chains, and get notified through Slack, email, or any webhook-compatible service.',
+        '12-pattern regex scanner detects AWS keys, JWTs, private keys, Stripe tokens, passwords, and connection strings leaked in API responses. Findings feed directly into the risk score with severity-weighted impact.',
       color: 'cyber-cyan',
     },
     {
-      icon: <Lock className="w-7 h-7" />,
-      title: 'Multi-Tenant Auth & RBAC',
+      icon: <Bug className="w-7 h-7" />,
+      title: 'AI Debug Assistant',
       description:
-        'JWT access tokens with httpOnly refresh-token rotation. Organization-level data isolation ensures tenants never see each other\'s data. Three roles — Admin, Member, Viewer — with granular route-level enforcement.',
+        'On-demand LLM-powered debugging generates step-by-step remediation playbooks. Gathers full context — last 10 runs, anomaly history, SLA status — and returns a structured diagnosis with root cause analysis.',
       color: 'cyber-violet',
     },
     {
-      icon: <Zap className="w-7 h-7" />,
-      title: 'Server-Side Proxy',
+      icon: <FileCode className="w-7 h-7" />,
+      title: 'API Contract Testing',
       description:
-        'Test any API directly from the dashboard without CORS headaches. Built-in SSRF protection blocks requests to private networks, cloud metadata endpoints, and localhost to keep your infrastructure safe.',
+        'Upload an OpenAPI 3.x spec per endpoint. The pipeline validates every response — checking documented status codes, required fields, type compliance, and $ref resolution up to 5 levels deep.',
+      color: 'cyber-pink',
+    },
+    {
+      icon: <Brain className="w-7 h-7" />,
+      title: 'AI Telemetry & FinOps',
+      description:
+        'Every LLM call tracked: prompt tokens, completion tokens, latency, cost in USD. Per-model rate tables (gpt-4o-mini, gpt-4o) power a FinOps dashboard with daily breakdowns and per-endpoint usage.',
+      color: 'cyber-cyan',
+    },
+    {
+      icon: <Terminal className="w-7 h-7" />,
+      title: 'Sentinel CLI & CI/CD',
+      description:
+        'Standalone Python CLI (Click + Rich + httpx) for CI/CD integration. Run monitoring probes from GitHub Actions, export CSVs, manage incidents — all from the command line with stored credentials.',
+      color: 'cyber-violet',
+    },
+    {
+      icon: <Bell className="w-7 h-7" />,
+      title: '7-Condition Alert Rules',
+      description:
+        'Per-endpoint alert rules with 7 condition types: latency, failure count, status code, schema change, risk threshold, SLA breach, and credential leak. Stateful consecutive-match tracking with n8n webhook dispatch.',
       color: 'cyber-pink',
     },
   ];
 
   const techStack = [
     { category: 'Backend', items: ['Python 3.12', 'FastAPI', 'SQLAlchemy 2.0', 'Alembic', 'PostgreSQL 16'], icon: <Server className="w-5 h-5" /> },
-    { category: 'Frontend', items: ['React 18', 'TypeScript', 'Tailwind CSS v4', 'React Query', 'Zustand'], icon: <Code2 className="w-5 h-5" /> },
-    { category: 'Auth & Security', items: ['JWT + Refresh Rotation', 'bcrypt', 'RBAC', 'SSRF Protection', 'CSP Headers'], icon: <Lock className="w-5 h-5" /> },
+    { category: 'Frontend', items: ['React 19', 'TypeScript', 'Tailwind CSS v4', 'React Query v5', 'Zustand v5'], icon: <Code2 className="w-5 h-5" /> },
+    { category: 'AI & LLM', items: ['OpenAI gpt-4o-mini', 'Cost-Gated Calls', 'Token Telemetry', 'Debug Playbooks', 'Anomaly Analysis'], icon: <Brain className="w-5 h-5" /> },
+    { category: 'Security', items: ['JWT + Refresh Rotation', 'SSRF Protection', '12-Pattern Cred Scanner', 'CSP Headers', 'Account Lockout'], icon: <Lock className="w-5 h-5" /> },
     { category: 'Infrastructure', items: ['Docker Compose', 'Nginx', 'Let\'s Encrypt TLS', 'n8n Workflows', 'DigitalOcean'], icon: <Database className="w-5 h-5" /> },
-    { category: 'Monitoring', items: ['APScheduler', 'httpx Async', 'Statistical Baselines', 'Webhook Alerts', 'Risk Engine'], icon: <Activity className="w-5 h-5" /> },
-    { category: 'DevOps', items: ['CI/CD Pipeline', 'Alembic Migrations', 'Multi-Stage Docker', 'Gzip + HTTP/2', 'HSTS'], icon: <Terminal className="w-5 h-5" /> },
+    { category: 'DevOps & CLI', items: ['Sentinel CLI (Click)', '10 Alembic Migrations', 'GitHub Actions CI', 'Multi-Stage Docker', 'HSTS + Gzip'], icon: <Terminal className="w-5 h-5" /> },
   ];
 
   const metrics = [
-    { value: 50, suffix: 'ms', label: 'Avg Probe Latency', description: 'Server-side measurement accuracy' },
-    { value: 100, suffix: '%', label: 'Tenant Isolation', description: 'Zero cross-org data leakage' },
-    { value: 4, suffix: '', label: 'Risk Tiers', description: 'LOW → MEDIUM → HIGH → CRITICAL' },
-    { value: 15, suffix: 'min', label: 'Token Expiry', description: 'Short-lived JWTs with auto-refresh' },
+    { value: 14, suffix: '', label: 'Pipeline Steps', description: 'Probe → scan → detect → score → alert' },
+    { value: 12, suffix: '', label: 'Scan Patterns', description: 'AWS, JWT, Stripe, passwords, and more' },
+    { value: 6, suffix: '', label: 'Risk Signals', description: 'Status, perf, drift, AI, security, history' },
+    { value: 10, suffix: '', label: 'DB Migrations', description: '16 tables across 10 Alembic versions' },
   ];
 
   const securityFeatures = [
-    { label: 'SSRF Protection', status: true, detail: 'DNS resolution check against RFC 1918 + cloud metadata' },
+    { label: 'Credential Leak Detection', status: true, detail: '12-pattern regex scanner for AWS keys, JWTs, private keys, Stripe tokens, passwords in API responses' },
+    { label: 'SSRF Protection', status: true, detail: 'DNS resolution check against RFC 1918 + cloud metadata (169.254.169.254)' },
     { label: 'Rate Limiting', status: true, detail: '50 req/s global, 5/min on login endpoint' },
     { label: 'HSTS Enabled', status: true, detail: 'max-age=31536000 with includeSubDomains' },
     { label: 'Content Security Policy', status: true, detail: 'Strict CSP blocking inline scripts & external resources' },
     { label: 'httpOnly Cookies', status: true, detail: 'Refresh tokens stored in Secure, SameSite=Strict cookies' },
     { label: 'Bcrypt Hashing', status: true, detail: '12 rounds — industry-standard password storage' },
     { label: 'Account Lockout', status: true, detail: '5 failed attempts → 15-minute lockout with audit trail' },
-    { label: 'Cascade Delete Safety', status: true, detail: 'Endpoint deletion cascades runs → anomalies → risk scores' },
+    { label: 'OpenAPI Contract Validation', status: true, detail: 'Upload specs and validate every API response for type mismatches and missing fields' },
+    { label: 'Cascade Delete Safety', status: true, detail: 'Endpoint deletion cascades through runs, anomalies, risk scores, findings' },
   ];
 
   const faqs = [
     {
       q: 'Why did I build SentinelAI?',
-      a: 'As a QA engineer, I\'ve seen production incidents that could have been prevented with better API monitoring. SentinelAI is my answer — a platform that doesn\'t just check if endpoints are up, but actively scores their risk and alerts you before users notice problems.',
+      a: 'As a QA engineer, I\'ve seen production incidents that could have been prevented with better API monitoring. SentinelAI is my answer — a platform that doesn\'t just check if endpoints are up, but actively scores their risk across 6 dimensions, scans for credential leaks, validates API contracts, and alerts you before users notice problems.',
     },
     {
-      q: 'How does the risk scoring work?',
-      a: 'Each API run produces a composite score from 0 (healthy) to 100 (critical). The engine factors in: response latency vs. rolling average, HTTP status code severity, failure rate over time, anomaly frequency, and SSL certificate expiry proximity. Scores are bucketed into four tiers that drive alert urgency.',
+      q: 'How does the 6-signal risk scoring work?',
+      a: 'Each API run produces a composite score (0-100) from 6 weighted signals: HTTP status (30%), performance deviation (20%), schema drift (15%), AI severity (15%), security findings (15%), and failure history (5%). Security uses severity-weighted counts — a single leaked AWS key has more impact than several generic secrets. Scores map to four tiers: LOW → MEDIUM → HIGH → CRITICAL.',
     },
     {
-      q: 'What makes the multi-tenant architecture secure?',
-      a: 'Every database query is scoped by organization_id — enforced at the repository layer, not just the API layer. JWT tokens embed the tenant context, and a FastAPI dependency extracts + validates it on every request. Refresh tokens use SHA-256 hashing with automatic rotation.',
+      q: 'How does credential leak detection work?',
+      a: 'The pipeline runs 12 regex patterns against every API response body — detecting AWS keys (AKIA...), JWTs (eyJ...), private keys, GitHub/GitLab/Slack tokens, passwords in JSON fields, connection strings with credentials, Stripe keys, and more. Findings are persisted with redacted previews and feed directly into the risk score.',
     },
     {
-      q: 'Can it monitor any API?',
-      a: 'Yes — the server-side proxy bypasses CORS restrictions, so you can monitor third-party APIs, internal microservices, or any HTTP endpoint. SSRF protection ensures the proxy can\'t be abused to reach private networks or cloud metadata services.',
+      q: 'What is the AI debug assistant?',
+      a: 'When an anomaly is detected (severity ≥ 40), users can trigger an AI analysis that gathers the last 10 runs, SLA status, alert rules, and anomaly history — then generates a structured diagnosis with step-by-step remediation playbook, root cause analysis, and related patterns. Each call is tracked via AI telemetry for cost visibility.',
     },
     {
-      q: 'What\'s the alerting pipeline?',
-      a: 'SentinelAI integrates with n8n for flexible workflow automation. When a risk threshold is breached, a webhook fires into n8n which can route alerts to Slack, email, PagerDuty, or any custom integration. Alert rules are configurable per-endpoint.',
+      q: 'How does contract testing work?',
+      a: 'Upload an OpenAPI 3.x spec per endpoint and the pipeline validates every response against it — checking status codes are documented, required fields are present, types match the schema, with recursive $ref resolution up to 5 levels deep. Violations are categorized by severity and displayed alongside other findings.',
+    },
+    {
+      q: 'Can I use SentinelAI in CI/CD?',
+      a: 'Yes — the Sentinel CLI (pip install) lets you run monitoring probes from GitHub Actions, export data, and manage incidents from the terminal. A GitHub Actions workflow template is included. The CI endpoint accepts endpoint names (not just UUIDs) for human-friendly YAML configuration.',
     },
   ];
 
@@ -281,9 +319,10 @@ export const SentinelAILanding: React.FC = () => {
               Intelligent API Monitoring & Risk Scoring Platform
             </p>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              A full-stack production system I built from scratch to monitor API health,
-              detect anomalies in real time, compute risk scores, and alert teams
-              before outages reach users.
+              A full-stack production system I built from scratch — monitoring API health,
+              detecting anomalies with AI, scanning for credential leaks, validating API contracts,
+              computing 6-signal risk scores, and alerting teams before outages reach users.
+              Includes a CLI for CI/CD integration and an AI debug assistant.
             </p>
 
             {/* CTA buttons */}
@@ -311,10 +350,10 @@ export const SentinelAILanding: React.FC = () => {
             {/* Quick stats strip */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Lines of Code', value: '12,000+' },
-                { label: 'API Endpoints', value: '25+' },
-                { label: 'React Components', value: '40+' },
-                { label: 'Alembic Migrations', value: '8+' },
+                { label: 'Lines of Code', value: '28,000+' },
+                { label: 'API Endpoints', value: '75+' },
+                { label: 'React Components', value: '56+' },
+                { label: 'DB Tables', value: '16' },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -426,7 +465,7 @@ export const SentinelAILanding: React.FC = () => {
             System Architecture
           </motion.h2>
           <p className="text-center text-gray-400 mb-12 max-w-2xl mx-auto">
-            Four-layer pipeline from probe execution to user-facing alerts.
+            Five-layer pipeline from probe execution to user-facing alerts.
           </p>
           <div className="max-w-3xl mx-auto">
             <ArchitectureDiagram />
@@ -446,18 +485,20 @@ export const SentinelAILanding: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {[
                 'Scheduler fires probe',
-                'httpx sends async request',
-                'Response captured (time, status, body)',
-                'Anomaly detector runs statistical check',
-                'Risk engine computes composite score',
-                'Dashboard updates via React Query',
-                'Alert fires if threshold breached',
+                'httpx async request',
+                'Response captured',
+                'Credential scan (12 patterns)',
+                'Contract validation (OpenAPI)',
+                'AI anomaly detection',
+                '6-signal risk scoring',
+                'Alert rules + incidents',
+                'WebSocket broadcast',
               ].map((step, i) => (
                 <React.Fragment key={i}>
                   <span className="px-3 py-1 bg-cyber-black/60 text-gray-300 rounded border border-gray-700">
                     {step}
                   </span>
-                  {i < 6 && <ArrowRight className="w-4 h-4 text-cyber-violet/50 flex-shrink-0" />}
+                  {i < 8 && <ArrowRight className="w-4 h-4 text-cyber-violet/50 flex-shrink-0" />}
                 </React.Fragment>
               ))}
             </div>
@@ -564,24 +605,28 @@ export const SentinelAILanding: React.FC = () => {
           <div className="max-w-3xl mx-auto space-y-4">
             {[
               {
+                title: 'Cost-Gated AI — $0 When Healthy',
+                body: 'The LLM is only invoked when rule-based signals detect anomalies. Zero signals = zero API calls. This keeps monitoring costs proportional to actual issues, not monitoring volume. Every call is tracked with token counts and USD cost for full FinOps visibility.',
+              },
+              {
+                title: '6-Signal Deterministic Risk Scoring',
+                body: 'Risk scores are computed from a weighted formula (status 30%, performance 20%, drift 15%, AI 15%, security 15%, history 5%) — no ML, no model drift. Same inputs always produce the same output. Users see exactly which component drives their score in the UI breakdown.',
+              },
+              {
                 title: 'Same-Origin Serving over Separate Frontend Deploy',
                 body: 'nginx serves both the React SPA and proxies /api on the same domain. This eliminates CORS complexity entirely and lets httpOnly cookies work with SameSite=Strict — the most secure cookie policy available.',
               },
               {
-                title: 'Denormalized organization_id on api_runs',
-                body: 'ApiRun stores organization_id even though it could be inferred via the parent endpoint. This denormalization lets me filter runs by tenant without joining through api_endpoints on every query — critical for dashboard performance.',
+                title: 'Severity-Weighted Security Scoring',
+                body: 'A single CRITICAL credential leak (AWS key) contributes more to the risk score than several MEDIUM findings (generic secrets). Multipliers: CRITICAL=1.0, HIGH=0.7, MEDIUM=0.4 — so severity matters more than volume.',
               },
               {
-                title: 'Refresh Token Rotation over Long-Lived Access Tokens',
-                body: 'Access tokens expire in 15 minutes. On 401, the frontend silently calls /auth/refresh, which rotates the refresh token (old one is revoked, new one issued). This limits the blast radius of a stolen token to minutes, not days.',
-              },
-              {
-                title: 'Statistical Baselines over Fixed Thresholds',
-                body: 'Rather than alerting on "latency > 1000ms", the anomaly detector compares each response against a rolling average. A 200ms endpoint spiking to 800ms is more concerning than a 2s endpoint hitting 2.2s.',
+                title: 'OpenAPI Spec Co-located with Endpoints',
+                body: 'The OpenAPI spec is stored as JSONB directly on the api_endpoints table — no join needed for contract validation. Suffix-based path matching handles URL differences, so /api/v1/users matches the spec path /users.',
               },
               {
                 title: 'Repository Pattern over Raw SQL',
-                body: 'Every database operation goes through a repository class. This makes tenant-scoping auditable (grep for organization_id in one directory), testable (mock the repo, not the DB), and migration-safe.',
+                body: 'Every database operation goes through a repository class with mandatory tenant_id. This makes tenant-scoping auditable (grep for organization_id in one directory), testable (mock the repo, not the DB), and migration-safe.',
               },
             ].map((decision, i) => (
               <motion.div
@@ -661,24 +706,24 @@ export const SentinelAILanding: React.FC = () => {
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
             {[
               {
-                title: 'Production Auth is Hard',
-                text: 'Token rotation, race conditions on concurrent 401 retries, httpOnly cookie paths, lockout mechanics — each one has subtle failure modes that only surface under real load.',
-                icon: <Lock className="w-6 h-6 text-cyber-violet" />,
+                title: 'Cost-Gating AI is Essential',
+                text: 'Calling an LLM on every healthy API probe would burn through budget fast. The cost-gating pattern — only invoke AI when rule-based signals detect anomalies — keeps costs proportional to actual issues. AI telemetry tracking makes spend fully visible.',
+                icon: <Brain className="w-6 h-6 text-cyber-violet" />,
               },
               {
                 title: 'Multi-Tenancy Touches Everything',
-                text: 'Adding organization_id isn\'t just a column — it changes every query, every service method, every API response. Miss one filter and you have a data leak.',
+                text: 'Adding organization_id isn\'t just a column — it changes every query, every service method, every API response. With 16 tables across 10 migrations, miss one filter and you have a data leak.',
                 icon: <Database className="w-6 h-6 text-cyber-cyan" />,
               },
               {
-                title: 'nginx Header Inheritance is Brutal',
-                text: 'Any add_header in a child location block silently drops ALL parent headers. I had to repeat security headers in every location context — a footgun I\'ll never forget.',
-                icon: <Server className="w-6 h-6 text-cyber-pink" />,
+                title: 'Security Scanners Need Precision',
+                text: 'Regex-based credential scanning requires careful pattern design. Too broad and you get false positives on every response; too narrow and you miss real leaks. Severity-weighted scoring ensures critical findings (AWS keys) outweigh minor ones.',
+                icon: <ShieldAlert className="w-6 h-6 text-cyber-pink" />,
               },
               {
-                title: 'SSRF is a Real Threat',
-                text: 'A proxy endpoint that lets users hit any URL is an SSRF vector. I added DNS resolution checks against RFC 1918 ranges, cloud metadata IPs, and blocked hostnames.',
-                icon: <Shield className="w-6 h-6 text-cyber-violet" />,
+                title: 'Pipeline Extensibility Matters',
+                text: 'The monitoring pipeline grew from 7 steps to 14, adding credential scanning, contract validation, schema snapshots, and more. The try/except isolation pattern for each step ensures one failure doesn\'t cascade — each step is independent.',
+                icon: <Layers className="w-6 h-6 text-cyber-violet" />,
               },
             ].map((lesson, i) => (
               <motion.div
