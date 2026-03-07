@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import CurrentUser, TenantId
 from app.db.session import get_session
 from app.monitoring.anomaly_engine import AnomalyEngine
-from app.monitoring.api_runner import ApiRunner
+from app.monitoring.api_runner import api_runner
 from app.monitoring.runner_service import RunnerService
 from app.repositories.api_endpoint import ApiEndpointRepository
 
@@ -64,21 +64,26 @@ async def ci_run(
                 detail=f"Invalid UUID: {endpoint_id}",
             )
     elif name:
-        # Find by name
+        # Find by name — prefer exact match, then fall back to substring
         all_eps = await repo.get_all(tenant_id)
-        matches = [e for e in all_eps if name.lower() in e.name.lower()]
-        if len(matches) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No endpoint matching '{name}'",
-            )
-        if len(matches) > 1:
-            names = ", ".join(e.name for e in matches[:5])
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Multiple matches: {names}. Be more specific.",
-            )
-        ep_uuid = matches[0].id
+        exact = [e for e in all_eps if e.name.lower() == name.lower()]
+        if exact:
+            # Use the first exact match (most recently created wins via DB ordering)
+            ep_uuid = exact[0].id
+        else:
+            matches = [e for e in all_eps if name.lower() in e.name.lower()]
+            if len(matches) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"No endpoint matching '{name}'",
+                )
+            if len(matches) > 1:
+                names = ", ".join(e.name for e in matches[:5])
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Multiple matches: {names}. Be more specific.",
+                )
+            ep_uuid = matches[0].id
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -92,7 +97,7 @@ async def ci_run(
 
     service = RunnerService(
         session=session,
-        runner=ApiRunner(),
+        runner=api_runner,
         anomaly_engine=anomaly_engine,
     )
 

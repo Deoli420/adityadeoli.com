@@ -1,0 +1,5 @@
+pytest==8.3.4
+pytest-playwright==0.6.2
+playwright==1.49.1
+psycopg2-binary==2.9.10
+bcrypt==4.2.1

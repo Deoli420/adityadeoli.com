@@ -41,6 +41,7 @@ class IncidentRepository:
     ) -> list[Incident]:
         stmt = (
             select(Incident)
+            .options(selectinload(Incident.endpoint))
             .where(Incident.organization_id == tenant_id)
             .order_by(Incident.created_at.desc())
             .limit(limit)

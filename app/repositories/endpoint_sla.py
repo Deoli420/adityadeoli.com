@@ -40,6 +40,7 @@ class EndpointSLARepository:
 
     async def update(self, sla: EndpointSLA) -> EndpointSLA:
         await self._session.flush()
+        await self._session.refresh(sla)
         return sla
 
     async def delete(self, sla: EndpointSLA) -> None:

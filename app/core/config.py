@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     LOCKOUT_MINUTES: int = 15
     FRONTEND_ORIGIN: str = "https://sentinelai.adityadeoli.com"
 
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True
+
     # Alerts / Webhook
     WEBHOOK_ENABLED: bool = True
     WEBHOOK_URL: str = ""

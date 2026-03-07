@@ -33,6 +33,7 @@ class ApiEndpointRepository:
 
     async def update(self, endpoint: ApiEndpoint) -> ApiEndpoint:
         await self._session.flush()
+        await self._session.refresh(endpoint)
         return endpoint
 
     async def delete(self, endpoint: ApiEndpoint) -> None:

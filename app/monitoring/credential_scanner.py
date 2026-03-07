@@ -197,6 +197,10 @@ class CredentialScanner:
 
         Returns a ScanResult containing all findings.
         """
+        # Ensure response_body is a string (may arrive as dict from JSON responses)
+        if isinstance(response_body, dict):
+            import json
+            response_body = json.dumps(response_body)
         if not response_body or len(response_body.strip()) < 10:
             return ScanResult()
 

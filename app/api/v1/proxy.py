@@ -13,6 +13,7 @@ cloud metadata endpoints, and localhost.
 
 import ipaddress
 import logging
+import os
 import socket
 import time
 from typing import Any, Optional
@@ -27,6 +28,14 @@ from app.core.auth import CurrentUser
 logger = logging.getLogger(__name__)
 
 # ── SSRF protection ─────────────────────────────────────────────────────
+
+# Hostnames that bypass SSRF IP resolution checks (e.g. Docker-internal services for testing).
+# Set via SSRF_ALLOWLIST_HOSTS env var (comma-separated).
+_SSRF_ALLOWLIST_HOSTS: set[str] = {
+    h.strip().lower()
+    for h in os.getenv("SSRF_ALLOWLIST_HOSTS", "").split(",")
+    if h.strip()
+}
 
 # Blocked hostnames (exact match after lowering)
 _BLOCKED_HOSTS: set[str] = {
@@ -97,6 +106,12 @@ def _validate_url_ssrf(url: str) -> None:
         # Allow common HTTP ports — block things like :6379 (Redis), :5432 (Postgres)
         pass  # We'll let it through for now but log it
         logger.info("Proxy request to non-standard port %d on %s", port, hostname)
+
+    # Skip IP resolution check for explicitly allowlisted hostnames
+    # (e.g. Docker-internal services used in E2E tests)
+    if hostname.lower() in _SSRF_ALLOWLIST_HOSTS:
+        logger.info("SSRF allowlist: skipping IP check for %s", hostname)
+        return
 
     # Resolve hostname → IPs and check each
     try:
