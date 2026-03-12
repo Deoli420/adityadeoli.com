@@ -34,9 +34,12 @@ def _load_config() -> dict[str, str]:
 
 
 def _save_config(cfg: dict[str, str]) -> None:
-    """Persist config to ~/.sentinel/config.json."""
+    """Persist config to ~/.sentinel/config.json with restricted permissions."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
+    # Restrict file permissions to owner only (security)
+    import os
+    os.chmod(CONFIG_FILE, 0o600)
 
 
 class SentinelClient:
@@ -49,7 +52,7 @@ class SentinelClient:
         self.api_url = os.environ.get("SENTINEL_API_URL", cfg.get("api_url", DEFAULT_API_URL))
         self.token = os.environ.get("SENTINEL_TOKEN", cfg.get("token", ""))
         self._email = cfg.get("email", "")
-        self._password = cfg.get("password", "")
+        self._password = ""  # Never loaded from config — only set during login()
         self._http = httpx.Client(
             base_url=self.api_url.rstrip("/"),
             timeout=30.0,
@@ -87,11 +90,11 @@ class SentinelClient:
         self._email = email
         self._password = password
 
+        # Store only tokens — NEVER persist plaintext password
         _save_config({
             "api_url": self.api_url,
             "token": self.token,
             "email": email,
-            "password": password,
         })
         return data
 

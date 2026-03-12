@@ -174,12 +174,15 @@ class IncidentService:
         if existing is not None:
             return None  # Already have an open incident
 
+        # Normalize: callers may pass 0-100 scale (risk engine) or 0.0-1.0
+        normalized = severity_score / 100.0 if severity_score > 1.0 else severity_score
+
         severity = "LOW"
-        if severity_score >= 0.8:
+        if normalized >= 0.8:
             severity = "CRITICAL"
-        elif severity_score >= 0.6:
+        elif normalized >= 0.6:
             severity = "HIGH"
-        elif severity_score >= 0.4:
+        elif normalized >= 0.4:
             severity = "MEDIUM"
 
         title = reasoning[:200] if reasoning else "Anomaly detected"

@@ -176,7 +176,8 @@ class RunnerService:
                 pairs = []
                 for f in form_fields:
                     if isinstance(f, dict) and f.get("enabled", True) and f.get("key", "").strip():
-                        pairs.append(f"{f['key']}={f.get('value', '')}")
+                        from urllib.parse import quote
+                        pairs.append(f"{quote(str(f['key']), safe='')}={quote(str(f.get('value', '')), safe='')}")
                 if pairs:
                     body_content = "&".join(pairs)
                     content_type = "application/x-www-form-urlencoded"
@@ -196,6 +197,9 @@ class RunnerService:
         Raises:
             HTTPException 404 if endpoint_id does not exist.
         """
+        # Generate correlation ID for end-to-end pipeline tracing
+        pipeline_id = str(uuid.uuid4())[:8]
+
         # 1. Load endpoint
         endpoint = await self._endpoint_repo.get_by_id(endpoint_id, tenant_id)
         if endpoint is None:
@@ -205,7 +209,8 @@ class RunnerService:
             )
 
         logger.info(
-            "Executing %s %s (expected %d)",
+            "[%s] Pipeline start: %s %s (expected %d)",
+            pipeline_id,
             endpoint.method,
             endpoint.url,
             endpoint.expected_status,
@@ -251,36 +256,43 @@ class RunnerService:
 
         # 4. Performance analysis (only if we got a response time)
         perf: PerformanceResult | None = None
-        if result.response_time_ms is not None:
-            historical = await self._run_repo.get_recent_times(
-                endpoint.id, limit=20
-            )
-            if historical and historical[0] == result.response_time_ms:
-                historical = historical[1:]
+        try:
+            if result.response_time_ms is not None:
+                historical = await self._run_repo.get_recent_times(
+                    endpoint.id, limit=20
+                )
+                if historical and historical[0] == result.response_time_ms:
+                    historical = historical[1:]
 
-            perf = self._tracker.analyse(
-                current_time_ms=result.response_time_ms,
-                historical_times=historical,
-            )
-            logger.info(
-                "Performance for %s: avg=%.1fms dev=%.1f%% spike=%s",
-                endpoint.name,
-                perf.rolling_avg_ms or 0,
-                perf.deviation_percent or 0,
-                perf.is_spike,
-            )
+                perf = self._tracker.analyse(
+                    current_time_ms=result.response_time_ms,
+                    historical_times=historical,
+                )
+                logger.info(
+                    "Performance for %s: avg=%.1fms dev=%.1f%% spike=%s",
+                    endpoint.name,
+                    perf.rolling_avg_ms or 0,
+                    perf.deviation_percent or 0,
+                    perf.is_spike,
+                )
+        except Exception:
+            logger.exception("Performance analysis failed for %s", endpoint.name)
 
         # 5. Schema drift detection
-        drift = self._validator.validate(
-            expected_schema=endpoint.expected_schema,
-            response_body=result.response_body,
-        )
-        if drift.has_drift:
-            logger.warning(
-                "Schema drift for %s: %d difference(s)",
-                endpoint.name,
-                drift.drift_count,
+        drift = DriftAnalysis(skipped_reason="analysis_error")
+        try:
+            drift = self._validator.validate(
+                expected_schema=endpoint.expected_schema,
+                response_body=result.response_body,
             )
+            if drift.has_drift:
+                logger.warning(
+                    "Schema drift for %s: %d difference(s)",
+                    endpoint.name,
+                    drift.drift_count,
+                )
+        except Exception:
+            logger.exception("Schema drift detection failed for %s", endpoint.name)
 
         # 5b. Auto-snapshot on schema change
         try:
@@ -296,7 +308,11 @@ class RunnerService:
             )
 
         # 5c. Credential leak scan
-        security_scan: ScanResult = credential_scanner.scan(result.response_body)
+        try:
+            security_scan: ScanResult = credential_scanner.scan(result.response_body)
+        except Exception:
+            logger.exception("Credential scan failed for %s", endpoint.name)
+            security_scan = ScanResult(findings=[])
         if security_scan.has_findings:
             logger.warning(
                 "Credential scan for %s: %d finding(s), max severity=%s",
@@ -367,8 +383,9 @@ class RunnerService:
             )
 
             # 7b. Persist AI telemetry if an LLM call was made
-            if anomaly.ai_called and self._anomaly_engine._llm.last_call_telemetry:
-                telem = self._anomaly_engine._llm.last_call_telemetry
+            # Capture telemetry immediately after analyse() to minimize race window
+            telem = self._anomaly_engine._llm.last_call_telemetry if hasattr(self._anomaly_engine, '_llm') else None
+            if anomaly.ai_called and telem:
                 await self._telemetry_repo.create(
                     AiTelemetryRecord(
                         endpoint_id=endpoint.id,
@@ -422,10 +439,12 @@ class RunnerService:
             anomaly=anomaly,
             failure_rate_percent=failure_rate,
             security_scan=security_scan,
+            contract=contract,
         )
 
         logger.info(
-            "Risk for %s: score=%.1f level=%s [status=%.0f perf=%.0f drift=%.0f ai=%.0f sec=%.0f hist=%.0f]",
+            "[%s] Risk for %s: score=%.1f level=%s [status=%.0f perf=%.0f drift=%.0f ai=%.0f sec=%.0f contract=%.0f hist=%.0f]",
+            pipeline_id,
             endpoint.name,
             risk.calculated_score,
             risk.risk_level,
@@ -434,6 +453,7 @@ class RunnerService:
             risk.drift_score,
             risk.ai_score,
             risk.security_score,
+            risk.contract_score,
             risk.history_score,
         )
 

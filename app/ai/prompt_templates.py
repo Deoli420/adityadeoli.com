@@ -13,7 +13,28 @@ Design:
 
 from __future__ import annotations
 
+import re
 from typing import Any, Optional
+
+
+def _sanitize(value: str, max_length: int = 500) -> str:
+    """Sanitize user-controlled input before injecting into LLM prompts.
+
+    Prevents prompt injection by:
+    - Stripping newlines (prevents multi-line override instructions)
+    - Removing control characters
+    - Truncating to max_length
+    """
+    if not value:
+        return value
+    # Replace newlines/carriage returns with spaces
+    cleaned = re.sub(r"[\n\r]+", " ", value)
+    # Remove non-printable control characters (keep tabs and spaces)
+    cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", cleaned)
+    # Truncate
+    if len(cleaned) > max_length:
+        cleaned = cleaned[:max_length] + "..."
+    return cleaned
 
 SYSTEM_PROMPT = """You are an API reliability intelligence engine for SentinelAI.
 
@@ -72,11 +93,17 @@ def build_user_prompt(
 
     All parameters are optional-safe — missing data is rendered as "N/A".
     """
+    # Sanitize user-controlled inputs to prevent prompt injection
+    safe_name = _sanitize(endpoint_name, max_length=200)
+    safe_url = _sanitize(url, max_length=500)
+    safe_method = _sanitize(method, max_length=10)
+    safe_error = _sanitize(error_message, max_length=500) if error_message else None
+
     lines = [
         "Analyse the following API execution summary:",
         "",
-        f"Endpoint: {endpoint_name}",
-        f"URL: {method} {url}",
+        f"Endpoint: {safe_name}",
+        f"URL: {safe_method} {safe_url}",
         f"Expected Status: {expected_status}",
         f"Actual Status: {actual_status or 'N/A (request failed)'}",
         f"Response Time: {_fmt_ms(response_time_ms)}",
@@ -85,8 +112,8 @@ def build_user_prompt(
         f"Historical Failure Rate: {failure_rate_percent:.1f}%",
     ]
 
-    if error_message:
-        lines.append(f"Error: {error_message}")
+    if safe_error:
+        lines.append(f"Error: {safe_error}")
 
     if schema_diff_summary:
         lines.append(f"Schema Differences: {_fmt_schema(schema_diff_summary)}")

@@ -62,9 +62,19 @@ class ApiRunRepository:
         endpoint_id: uuid.UUID,
         *,
         tenant_id: uuid.UUID | None = None,
+        hours: int = 24,
     ) -> float:
-        """Failure rate over all recorded runs for an endpoint."""
-        base_filters = [ApiRun.endpoint_id == endpoint_id]
+        """Failure rate over recent runs (default: last 24h) for an endpoint.
+
+        Bounded time window prevents unbounded table scans at scale.
+        """
+        from datetime import datetime, timedelta, timezone
+
+        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        base_filters = [
+            ApiRun.endpoint_id == endpoint_id,
+            ApiRun.created_at >= since,
+        ]
         if tenant_id is not None:
             base_filters.append(ApiRun.organization_id == tenant_id)
 

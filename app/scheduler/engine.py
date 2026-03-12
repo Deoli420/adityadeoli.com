@@ -59,6 +59,12 @@ class MonitorScheduler:
                 "max_instances": 1,          # one instance per job at a time
                 "misfire_grace_time": 60,    # seconds of grace for misfired jobs
             },
+            executors={
+                "default": {
+                    "type": "asyncio",
+                    "max_workers": settings.SCHEDULER_MAX_CONCURRENT,
+                },
+            },
         )
         self._scheduler.start()
         self._started_at = datetime.now(timezone.utc)
@@ -72,10 +78,10 @@ class MonitorScheduler:
         if self._scheduler is None:
             return
 
-        self._scheduler.shutdown(wait=False)
+        self._scheduler.shutdown(wait=True)
         self._scheduler = None
         self._started_at = None
-        logger.info("Scheduler stopped")
+        logger.info("Scheduler stopped (waited for in-flight jobs)")
 
     # ── properties ───────────────────────────────────────────────────
 

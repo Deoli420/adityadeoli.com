@@ -189,7 +189,7 @@ async def _manage_incidents(eid: uuid.UUID, pipeline) -> None:  # noqa: ANN001
         svc = IncidentService(IncidentRepository(session))
 
         # Auto-create from anomaly
-        if pipeline.anomaly and pipeline.anomaly.is_anomaly:
+        if pipeline.anomaly and pipeline.anomaly.anomaly_detected:
             incident = await svc.auto_create_from_anomaly(
                 endpoint_id=eid,
                 organization_id=pipeline.run.organization_id,
@@ -250,7 +250,7 @@ async def _broadcast_pipeline_events(eid: uuid.UUID, pipeline) -> None:  # noqa:
         })
 
     # Broadcast anomaly if detected
-    if pipeline.anomaly and pipeline.anomaly.is_anomaly:
+    if pipeline.anomaly and pipeline.anomaly.anomaly_detected:
         await ws_manager.broadcast(org_id, {
             "type": "anomaly_detected",
             "endpoint_id": str(eid),

@@ -10,7 +10,7 @@ class AlertRuleCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     condition_type: str = Field(
         ...,
-        pattern="^(LATENCY_ABOVE|FAILURE_COUNT|STATUS_CODE|SCHEMA_CHANGE|RISK_ABOVE|SLA_BREACH)$",
+        pattern="^(LATENCY_ABOVE|FAILURE_COUNT|STATUS_CODE|SCHEMA_CHANGE|RISK_ABOVE|SLA_BREACH|CREDENTIAL_LEAK)$",
     )
     threshold: float = Field(..., ge=0)
     consecutive_count: int = Field(default=1, ge=1, le=100)
@@ -20,7 +20,7 @@ class AlertRuleUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=255)
     condition_type: Optional[str] = Field(
         default=None,
-        pattern="^(LATENCY_ABOVE|FAILURE_COUNT|STATUS_CODE|SCHEMA_CHANGE|RISK_ABOVE|SLA_BREACH)$",
+        pattern="^(LATENCY_ABOVE|FAILURE_COUNT|STATUS_CODE|SCHEMA_CHANGE|RISK_ABOVE|SLA_BREACH|CREDENTIAL_LEAK)$",
     )
     threshold: Optional[float] = Field(default=None, ge=0)
     consecutive_count: Optional[int] = Field(default=None, ge=1, le=100)

@@ -11,12 +11,13 @@ Scoring model (weighted composite):
   ┌────────────────────────┬────────┬─────────────────────────────────────┐
   │ Signal                 │ Weight │ Notes                               │
   ├────────────────────────┼────────┼─────────────────────────────────────┤
-  │ Status failure         │ 30     │ Binary: 0 or 30                     │
+  │ Status failure         │ 25     │ Binary: 0 or 25                     │
   │ Performance deviation  │ 20     │ Scaled: deviation % mapped to 0–20  │
-  │ Schema drift           │ 15     │ Scaled: diff count mapped to 0–15   │
-  │ AI severity            │ 15     │ Direct: severity_score * 0.15       │
-  │ Security (cred leaks)  │ 15     │ Scaled: finding count mapped 0–15   │
-  │ Historical failure %   │  5     │ Scaled: failure rate mapped to 0–5  │
+  │ Schema drift           │ 12     │ Scaled: diff count mapped to 0–12   │
+  │ AI severity            │ 13     │ Direct: severity_score * 0.13       │
+  │ Security (cred leaks)  │ 13     │ Scaled: finding count mapped 0–13   │
+  │ Contract violations    │ 10     │ Scaled: violation count mapped 0–10 │
+  │ Historical failure %   │  7     │ Scaled: failure rate mapped to 0–7  │
   └────────────────────────┴────────┴─────────────────────────────────────┘
 
 Risk levels:
@@ -39,6 +40,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.monitoring.anomaly_engine import AnomalyResult
+from app.monitoring.contract_validator import ContractResult
 from app.monitoring.credential_scanner import ScanResult
 from app.monitoring.performance_tracker import PerformanceResult
 from app.monitoring.schema_validator import DriftAnalysis
@@ -67,6 +69,7 @@ class RiskResult:
     drift_score: float = 0.0
     ai_score: float = 0.0
     security_score: float = 0.0
+    contract_score: float = 0.0
     history_score: float = 0.0
 
 
@@ -104,12 +107,13 @@ class RiskEngine:
     """
 
     # ── weights (must sum to 100) ───────────────────────────────────
-    W_STATUS = 30.0
+    W_STATUS = 25.0
     W_PERFORMANCE = 20.0
-    W_DRIFT = 15.0
-    W_AI = 15.0
-    W_SECURITY = 15.0
-    W_HISTORY = 5.0
+    W_DRIFT = 12.0
+    W_AI = 13.0
+    W_SECURITY = 13.0
+    W_CONTRACT = 10.0
+    W_HISTORY = 7.0
 
     # ── scaling thresholds ──────────────────────────────────────────
     # Performance: deviation >= this → max score for that component
@@ -124,6 +128,9 @@ class RiskEngine:
     # History: failure rate >= this → max score for that component
     HISTORY_MAX_RATE = 50.0  # percent
 
+    # Contract: this many violations → max score for that component
+    CONTRACT_MAX_VIOLATIONS = 5
+
     def score(
         self,
         *,
@@ -133,6 +140,7 @@ class RiskEngine:
         anomaly: Optional[AnomalyResult],
         failure_rate_percent: float,
         security_scan: Optional[ScanResult] = None,
+        contract: Optional[ContractResult] = None,
     ) -> RiskResult:
         """
         Compute a deterministic risk score from pipeline signals.
@@ -179,7 +187,15 @@ class RiskEngine:
             ratio = _clamp(weighted_count / self.SECURITY_MAX_FINDINGS, 0.0, 1.0)
             security_score = ratio * self.W_SECURITY
 
-        # ── 6. Historical failure rate component ────────────────────
+        # ── 6. Contract violation component ───────────────────────
+        contract_score = 0.0
+        if contract and contract.has_violations:
+            ratio = _clamp(
+                contract.total_violations / self.CONTRACT_MAX_VIOLATIONS, 0.0, 1.0
+            )
+            contract_score = ratio * self.W_CONTRACT
+
+        # ── 7. Historical failure rate component ────────────────────
         history_score = 0.0
         if failure_rate_percent > 0:
             ratio = _clamp(failure_rate_percent / self.HISTORY_MAX_RATE, 0.0, 1.0)
@@ -187,7 +203,8 @@ class RiskEngine:
 
         # ── composite ──────────────────────────────────────────────
         total = _clamp(
-            status_score + performance_score + drift_score + ai_score + security_score + history_score,
+            status_score + performance_score + drift_score + ai_score
+            + security_score + contract_score + history_score,
             0.0,
             100.0,
         )
@@ -201,6 +218,7 @@ class RiskEngine:
             drift_score=round(drift_score, 1),
             ai_score=round(ai_score, 1),
             security_score=round(security_score, 1),
+            contract_score=round(contract_score, 1),
             history_score=round(history_score, 1),
         )
 

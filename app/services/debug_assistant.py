@@ -205,8 +205,19 @@ async def generate_debug_suggestions(
                 latest_anomaly = anom
                 break
 
-    # 4. Cost gate — only debug if severity >= 40
-    if latest_anomaly and latest_anomaly.severity_score < 40:
+    # 4. Cost gate — only debug if there IS an anomaly with severity >= 40
+    if latest_anomaly is None:
+        logger.info("Debug skipped for %s — no anomaly detected", endpoint.name)
+        return {
+            "diagnosis": "No anomaly detected for this endpoint.",
+            "steps": ["Endpoint appears healthy — no debugging needed."],
+            "likely_root_cause": "N/A",
+            "severity_assessment": "NONE — no anomaly",
+            "related_patterns": [],
+            "_skipped": True,
+            "_reason": "No anomaly detected",
+        }
+    if latest_anomaly.severity_score < 40:
         logger.info(
             "Debug skipped for %s — severity %.0f < 40",
             endpoint.name,

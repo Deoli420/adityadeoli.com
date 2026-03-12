@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": {
+      "/api/": {
         target: "https://api.sentinelai.adityadeoli.com",
         changeOrigin: true,
       },

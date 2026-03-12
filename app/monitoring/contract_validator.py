@@ -255,12 +255,18 @@ class ContractValidator:
 
         if json_schema and response_body:
             try:
-                parsed = json.loads(response_body)
+                # response_body may already be a dict (from api_runner)
+                if isinstance(response_body, dict):
+                    parsed = response_body
+                elif isinstance(response_body, (list, bool, int, float)):
+                    parsed = response_body
+                else:
+                    parsed = json.loads(response_body)
                 _validate_schema(
                     openapi_spec, json_schema, parsed,
                     "response.body", violations,
                 )
-            except (json.JSONDecodeError, TypeError):
+            except (json.JSONDecodeError, TypeError, ValueError):
                 pass  # Not JSON — skip body validation
 
         if violations:

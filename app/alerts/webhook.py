@@ -6,17 +6,20 @@ connection pooling, initialised at app startup, torn down at shutdown.
 
 Responsibilities:
   - POST JSON payloads to the configured webhook URL.
+  - Retry failed deliveries with exponential backoff (up to 3 attempts).
   - Timeout protection per request.
   - Never raise — log failures and return a result bool.
 
 Design:
   - Separate from the API runner client because webhook traffic has
     different pool sizes, timeouts, and retry needs.
-  - Stateless per-call — no session or queue, just fire-and-forget.
+  - Retry with exponential backoff on transient failures (5xx, timeout).
+  - All delivery attempts are logged with attempt number for observability.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -25,6 +28,9 @@ import httpx
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+_MAX_RETRIES = 3
+_BACKOFF_BASE_SECONDS = 2.0  # 2s, 4s, 8s
 
 
 class WebhookClient:
@@ -65,9 +71,10 @@ class WebhookClient:
             },
         )
         logger.info(
-            "Webhook client started (url=%s, timeout=%.0fs)",
+            "Webhook client started (url=%s, timeout=%.0fs, max_retries=%d)",
             settings.WEBHOOK_URL,
             settings.WEBHOOK_TIMEOUT_SECONDS,
+            _MAX_RETRIES,
         )
 
     async def shutdown(self) -> None:
@@ -87,7 +94,8 @@ class WebhookClient:
         """
         POST a JSON payload to the configured webhook URL.
 
-        Returns True on success (2xx), False on any failure.
+        Retries up to 3 times with exponential backoff on transient failures.
+        Returns True on success (2xx), False on permanent failure.
         This method **never raises**.
         """
         if self._client is None:
@@ -95,33 +103,69 @@ class WebhookClient:
             return False
 
         url = settings.WEBHOOK_URL
-        try:
-            response = await self._client.post(url, json=payload)
 
-            if response.is_success:
-                logger.info(
-                    "Webhook delivered: %d %s (%d bytes)",
+        for attempt in range(1, _MAX_RETRIES + 1):
+            try:
+                response = await self._client.post(url, json=payload)
+
+                if response.is_success:
+                    logger.info(
+                        "Webhook delivered: %d %s (attempt %d/%d, %d bytes)",
+                        response.status_code,
+                        url,
+                        attempt,
+                        _MAX_RETRIES,
+                        len(response.content),
+                    )
+                    return True
+
+                # Non-retryable client error (4xx)
+                if 400 <= response.status_code < 500:
+                    logger.warning(
+                        "Webhook rejected (non-retryable): %d %s — %s",
+                        response.status_code,
+                        url,
+                        response.text[:200],
+                    )
+                    return False
+
+                # Server error (5xx) — retryable
+                logger.warning(
+                    "Webhook server error: %d %s (attempt %d/%d)",
                     response.status_code,
                     url,
-                    len(response.content),
+                    attempt,
+                    _MAX_RETRIES,
                 )
-                return True
 
-            logger.warning(
-                "Webhook rejected: %d %s — %s",
-                response.status_code,
-                url,
-                response.text[:200],
-            )
-            return False
+            except httpx.TimeoutException:
+                logger.warning(
+                    "Webhook timed out: %s (attempt %d/%d)",
+                    url,
+                    attempt,
+                    _MAX_RETRIES,
+                )
 
-        except httpx.TimeoutException:
-            logger.error("Webhook timed out: %s", url)
-            return False
+            except Exception as exc:
+                logger.warning(
+                    "Webhook send failed: %s — %s (attempt %d/%d)",
+                    url,
+                    exc,
+                    attempt,
+                    _MAX_RETRIES,
+                )
 
-        except Exception as exc:
-            logger.error("Webhook send failed: %s — %s", url, exc)
-            return False
+            # Backoff before retry (skip on last attempt)
+            if attempt < _MAX_RETRIES:
+                delay = _BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
+                await asyncio.sleep(delay)
+
+        logger.error(
+            "Webhook delivery FAILED after %d attempts: %s",
+            _MAX_RETRIES,
+            url,
+        )
+        return False
 
 
 # ─── module-level singleton ─────────────────────────────────────────────

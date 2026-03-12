@@ -20,6 +20,7 @@ Design:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -266,7 +267,6 @@ class LLMClient:
                         exc,
                         delay,
                     )
-                    import asyncio
                     await asyncio.sleep(delay)
                     continue
 
@@ -313,7 +313,8 @@ class LLMClient:
         Single LLM call attempt.  Returns parsed dict or None.
         Raises on network/API errors (caller handles retry).
         """
-        assert self._client is not None
+        if self._client is None:
+            raise RuntimeError("LLMClient._do_call called before startup()")
 
         response = await self._client.chat.completions.create(
             model=settings.OPENAI_MODEL,
