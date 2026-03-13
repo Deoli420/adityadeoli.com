@@ -26,6 +26,12 @@ import app.models.organization  # noqa: F401
 import app.models.user  # noqa: F401
 import app.models.refresh_token  # noqa: F401
 import app.models.audit_log  # noqa: F401
+import app.models.endpoint_sla  # noqa: F401
+import app.models.incident  # noqa: F401
+import app.models.alert_rule  # noqa: F401
+import app.models.schema_snapshot  # noqa: F401
+import app.models.security_finding  # noqa: F401
+import app.models.ai_telemetry  # noqa: F401
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,

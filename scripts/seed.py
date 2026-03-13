@@ -32,6 +32,12 @@ import app.models.anomaly  # noqa: F401, E402
 import app.models.risk_score  # noqa: F401, E402
 import app.models.refresh_token  # noqa: F401, E402
 import app.models.audit_log  # noqa: F401, E402
+import app.models.endpoint_sla  # noqa: F401, E402
+import app.models.incident  # noqa: F401, E402
+import app.models.alert_rule  # noqa: F401, E402
+import app.models.schema_snapshot  # noqa: F401, E402
+import app.models.security_finding  # noqa: F401, E402
+import app.models.ai_telemetry  # noqa: F401, E402
 
 
 DEFAULT_ORG_NAME = "SentinelAI"

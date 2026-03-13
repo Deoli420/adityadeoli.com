@@ -56,14 +56,8 @@ class MonitorScheduler:
         self._scheduler = AsyncIOScheduler(
             job_defaults={
                 "coalesce": True,           # merge missed runs into one
-                "max_instances": 1,          # one instance per job at a time
+                "max_instances": settings.SCHEDULER_MAX_CONCURRENT,
                 "misfire_grace_time": 60,    # seconds of grace for misfired jobs
-            },
-            executors={
-                "default": {
-                    "type": "asyncio",
-                    "max_workers": settings.SCHEDULER_MAX_CONCURRENT,
-                },
             },
         )
         self._scheduler.start()
