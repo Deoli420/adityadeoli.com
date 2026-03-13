@@ -71,7 +71,7 @@ export function AiHealthCard() {
           label="Total Calls"
           value={data.total_calls.toLocaleString()}
           icon={Activity}
-          color="text-slate-400"
+          color="text-text-secondary"
         />
         <div>
           <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">

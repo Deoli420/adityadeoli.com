@@ -289,7 +289,7 @@ export function EndpointDetailPage() {
                 <Link
                   key={inc.id}
                   to={`/incidents/${inc.id}`}
-                  className="flex items-center gap-3 rounded-lg bg-white/[0.02] border border-white/[0.04] px-4 py-3 hover:bg-white/[0.04] transition-colors"
+                  className="flex items-center gap-3 rounded-lg bg-surface border border-border px-4 py-3 hover:bg-surface-tertiary transition-colors"
                 >
                   <div
                     className={clsx(
@@ -300,7 +300,7 @@ export function EndpointDetailPage() {
                       inc.severity === "LOW" && "bg-emerald-500",
                     )}
                   />
-                  <span className="flex-1 text-sm text-slate-300 truncate">
+                  <span className="flex-1 text-sm text-text-primary truncate">
                     {inc.title}
                   </span>
                   <span

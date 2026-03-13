@@ -36,17 +36,17 @@ export function AiTelemetryPage() {
             <Brain className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-white">
+            <h1 className="text-xl font-semibold text-text-primary">
               AI Telemetry
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-text-secondary">
               LLM usage, cost tracking &amp; health monitoring
             </p>
           </div>
         </div>
 
         {/* Time range selector */}
-        <div className="flex gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] p-1">
+        <div className="flex gap-1.5 rounded-lg border border-border bg-surface p-1">
           {TIME_PRESETS.map((preset) => (
             <button
               key={preset.days}
@@ -55,7 +55,7 @@ export function AiTelemetryPage() {
                 "rounded-md px-3 py-1 text-xs font-medium transition-all",
                 days === preset.days
                   ? "bg-accent/15 text-accent"
-                  : "text-slate-400 hover:text-slate-200",
+                  : "text-text-secondary hover:text-text-primary",
               )}
             >
               {preset.label}
@@ -226,7 +226,7 @@ function TokenBar({
           {value.toLocaleString()}
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-tertiary">
         <div
           className={clsx("h-full rounded-full transition-all", color)}
           style={{ width: `${pct}%` }}

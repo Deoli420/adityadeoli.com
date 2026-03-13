@@ -143,7 +143,7 @@ function TimelineEntry({
         "flex items-start gap-3 rounded-lg border px-4 py-3 transition-colors",
         isLatest
           ? "bg-accent/5 border-accent/20"
-          : "bg-white/[0.02] border-white/[0.04]",
+          : "bg-surface border-border",
       )}
     >
       {/* Timeline dot */}

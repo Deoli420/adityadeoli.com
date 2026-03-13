@@ -46,7 +46,7 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
   return (
     <Link
       to={`/incidents/${incident.id}`}
-      className="group flex items-center gap-4 rounded-xl border border-white/[0.04] bg-white/[0.02] px-5 py-4 transition-all hover:bg-white/[0.04] hover:border-white/[0.08]"
+      className="group flex items-center gap-4 rounded-xl border border-border bg-surface px-5 py-4 transition-all hover:bg-surface-tertiary hover:border-text-tertiary"
     >
       {/* Severity dot */}
       <div
@@ -61,14 +61,14 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
+        <p className="truncate text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
           {incident.title}
         </p>
-        <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
+        <div className="mt-1 flex items-center gap-3 text-xs text-text-secondary">
           <span>{incident.endpoint_name || "Unknown endpoint"}</span>
-          <span className="text-slate-700">|</span>
+          <span className="text-text-tertiary">|</span>
           <span className="capitalize">{incident.trigger_type}</span>
-          <span className="text-slate-700">|</span>
+          <span className="text-text-tertiary">|</span>
           <Clock className="h-3 w-3" />
           <span>{timeAgo(incident.started_at)}</span>
         </div>
@@ -92,21 +92,21 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
         {incident.status}
       </span>
 
-      <ArrowRight className="h-4 w-4 shrink-0 text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-400" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary" />
     </Link>
   );
 }
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-white/[0.04] bg-white/[0.02] px-5 py-4">
-      <div className="h-2.5 w-2.5 rounded-full bg-slate-800 animate-pulse" />
+    <div className="flex items-center gap-4 rounded-xl border border-border bg-surface px-5 py-4">
+      <div className="h-2.5 w-2.5 rounded-full bg-surface-tertiary animate-pulse" />
       <div className="flex-1 space-y-2">
-        <div className="h-4 w-2/3 rounded bg-slate-800 animate-pulse" />
-        <div className="h-3 w-1/3 rounded bg-slate-800/60 animate-pulse" />
+        <div className="h-4 w-2/3 rounded bg-surface-tertiary animate-pulse" />
+        <div className="h-3 w-1/3 rounded bg-border animate-pulse" />
       </div>
-      <div className="h-5 w-16 rounded-full bg-slate-800 animate-pulse" />
-      <div className="h-5 w-20 rounded-full bg-slate-800 animate-pulse" />
+      <div className="h-5 w-16 rounded-full bg-surface-tertiary animate-pulse" />
+      <div className="h-5 w-20 rounded-full bg-surface-tertiary animate-pulse" />
     </div>
   );
 }
@@ -126,8 +126,8 @@ export function IncidentsPage() {
             <AlertTriangle className="h-5 w-5 text-red-400" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-white">Incidents</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-xl font-semibold text-text-primary">Incidents</h1>
+            <p className="text-sm text-text-secondary">
               {openCount > 0
                 ? `${openCount} open incident${openCount > 1 ? "s" : ""}`
                 : "No open incidents"}
@@ -137,7 +137,7 @@ export function IncidentsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-white/[0.03] p-1">
+      <div className="flex gap-1 rounded-xl bg-surface-tertiary p-1">
         {TABS.map(({ label, value, icon: Icon }) => (
           <button
             key={label}
@@ -145,8 +145,8 @@ export function IncidentsPage() {
             className={clsx(
               "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
               activeTab === value
-                ? "bg-white/[0.08] text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]",
+                ? "bg-surface text-text-primary shadow-sm"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface-secondary",
             )}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -162,12 +162,12 @@ export function IncidentsPage() {
         ) : incidents && incidents.length > 0 ? (
           incidents.map((inc) => <IncidentRow key={inc.id} incident={inc} />)
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.04] bg-white/[0.02] py-16">
-            <CheckCircle2 className="h-10 w-10 text-emerald-500/40 mb-3" />
-            <p className="text-sm font-medium text-slate-400">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface py-16">
+            <CheckCircle2 className="h-10 w-10 text-success/40 mb-3" />
+            <p className="text-sm font-medium text-text-secondary">
               {activeTab ? `No ${activeTab.toLowerCase()} incidents` : "No incidents yet"}
             </p>
-            <p className="mt-1 text-xs text-slate-600">
+            <p className="mt-1 text-xs text-text-tertiary">
               Incidents are created automatically when anomalies are detected
             </p>
           </div>

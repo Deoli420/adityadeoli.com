@@ -122,7 +122,7 @@ export function DebugAssistant({ endpointId }: { endpointId: string }) {
           </Section>
 
           {/* Severity */}
-          <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-tertiary px-3 py-2">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-text-tertiary" />
             <span className="text-xs text-text-tertiary">Severity:</span>
             <span className="text-xs font-medium text-text-primary">

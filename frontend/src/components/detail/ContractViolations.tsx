@@ -108,7 +108,7 @@ export function ContractViolations({ endpointId }: { endpointId: string }) {
 
       {/* Upload area */}
       {showUpload && (
-        <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] p-4 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-surface-tertiary p-4 text-center">
           <p className="text-xs text-text-tertiary mb-3">
             Upload an OpenAPI 3.x spec (JSON) to enable contract validation.
           </p>
@@ -146,7 +146,7 @@ export function ContractViolations({ endpointId }: { endpointId: string }) {
           {violations.map((v, i) => (
             <div
               key={i}
-              className="flex items-start gap-3 rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2.5"
+              className="flex items-start gap-3 rounded-lg border border-border bg-surface px-3 py-2.5"
             >
               <AlertCircle
                 className={clsx(

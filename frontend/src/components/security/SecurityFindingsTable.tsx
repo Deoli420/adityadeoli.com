@@ -79,7 +79,7 @@ export function SecurityFindingsTable() {
           <Link
             key={f.id}
             to={`/endpoints/${f.endpoint_id}`}
-            className="flex items-center gap-3 rounded-lg border border-white/[0.04] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] transition-colors group"
+            className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 hover:bg-surface-tertiary transition-colors group"
           >
             {/* Severity dot */}
             <div

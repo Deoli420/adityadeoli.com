@@ -61,7 +61,7 @@ export function SecurityFindings({ endpointId }: { endpointId: string }) {
         {findings.map((f) => (
           <div
             key={f.id}
-            className="flex items-center gap-3 rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2.5"
+            className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5"
           >
             {/* Severity icon */}
             <AlertTriangle

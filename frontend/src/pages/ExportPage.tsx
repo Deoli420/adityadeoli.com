@@ -151,10 +151,10 @@ export function ExportPage() {
             <Download className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-white">
+            <h1 className="text-xl font-semibold text-text-primary">
               Export &amp; Reports
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-text-secondary">
               Download monitoring data as CSV files
             </p>
           </div>
@@ -163,7 +163,7 @@ export function ExportPage() {
 
       {/* Export type selector */}
       <div>
-        <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-text-tertiary">
           Report Type
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -178,7 +178,7 @@ export function ExportPage() {
                   "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
                   active
                     ? "border-accent/40 bg-accent/5 ring-1 ring-accent/20"
-                    : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1]",
+                    : "border-border bg-surface hover:bg-surface-tertiary hover:border-text-tertiary",
                 )}
               >
                 <div
@@ -192,7 +192,7 @@ export function ExportPage() {
                 <span
                   className={clsx(
                     "text-xs font-medium",
-                    active ? "text-white" : "text-slate-400",
+                    active ? "text-text-primary" : "text-text-secondary",
                   )}
                 >
                   {type.label}
@@ -201,13 +201,13 @@ export function ExportPage() {
             );
           })}
         </div>
-        <p className="mt-2 text-xs text-slate-500">{activeType.description}</p>
+        <p className="mt-2 text-xs text-text-tertiary">{activeType.description}</p>
       </div>
 
       {/* Date range (only for types that support it) */}
       {activeType.supportsDateRange && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+          <h2 className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-text-tertiary">
             <Calendar className="h-3.5 w-3.5" />
             Date Range
           </h2>
@@ -220,7 +220,7 @@ export function ExportPage() {
                   "rounded-lg border px-3.5 py-1.5 text-xs font-medium transition-all",
                   selectedPreset === preset.days
                     ? "border-accent/40 bg-accent/10 text-accent"
-                    : "border-white/[0.06] bg-white/[0.02] text-slate-400 hover:bg-white/[0.04] hover:text-slate-300",
+                    : "border-border bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary",
                 )}
               >
                 {preset.label}
@@ -232,9 +232,9 @@ export function ExportPage() {
 
       {/* Endpoint filter */}
       <div>
-        <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-text-tertiary">
           Filter by Endpoints{" "}
-          <span className="text-slate-600">
+          <span className="text-text-tertiary">
             ({selectedEndpoints.length === 0
               ? "all"
               : `${selectedEndpoints.length} selected`})
@@ -251,7 +251,7 @@ export function ExportPage() {
                   "flex items-center gap-3 rounded-lg border px-4 py-2.5 text-left transition-all",
                   active
                     ? "border-accent/30 bg-accent/5"
-                    : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]",
+                    : "border-border bg-surface hover:bg-surface-tertiary",
                 )}
               >
                 <div
@@ -259,7 +259,7 @@ export function ExportPage() {
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all",
                     active
                       ? "border-accent bg-accent text-white"
-                      : "border-white/20 bg-white/[0.04]",
+                      : "border-border bg-surface-tertiary",
                   )}
                 >
                   {active && <CheckCircle2 className="h-3 w-3" />}
@@ -268,12 +268,12 @@ export function ExportPage() {
                   <p
                     className={clsx(
                       "truncate text-sm font-medium",
-                      active ? "text-white" : "text-slate-300",
+                      active ? "text-text-primary" : "text-text-primary",
                     )}
                   >
                     {ep.name}
                   </p>
-                  <p className="truncate text-xs text-slate-500">
+                  <p className="truncate text-xs text-text-secondary">
                     {ep.method} {ep.url}
                   </p>
                 </div>
@@ -281,7 +281,7 @@ export function ExportPage() {
             );
           })}
           {(!endpoints || endpoints.length === 0) && (
-            <p className="col-span-2 py-4 text-center text-sm text-slate-500">
+            <p className="col-span-2 py-4 text-center text-sm text-text-tertiary">
               No endpoints found
             </p>
           )}
@@ -289,7 +289,7 @@ export function ExportPage() {
       </div>
 
       {/* Export button */}
-      <div className="flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] px-6 py-5">
+      <div className="flex items-center gap-4 rounded-xl border border-border bg-surface px-6 py-5">
         <button
           onClick={handleExport}
           disabled={loading !== null}
@@ -309,13 +309,13 @@ export function ExportPage() {
         </button>
 
         {lastExport === activeType.id && (
-          <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+          <span className="flex items-center gap-1.5 text-xs text-success">
             <CheckCircle2 className="h-3.5 w-3.5" />
             Downloaded
           </span>
         )}
 
-        <span className="ml-auto text-xs text-slate-500">
+        <span className="ml-auto text-xs text-text-tertiary">
           CSV format · max 10,000 rows
         </span>
       </div>
