@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Scale, AlertTriangle, Lightbulb, ChevronRight } from 'lucide-react';
+import { GlowCard } from './ui/spotlight-card';
 
 const listContainerVariants = {
   hidden: { opacity: 0 },
@@ -74,35 +75,36 @@ export const EngineeringThinking: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: sectionIndex * 0.15 }}
-                className="bg-cyber-black/60 backdrop-blur rounded-lg p-6 cyber-border"
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <Icon className={`w-5 h-5 text-${section.color} flex-shrink-0`} />
-                  <h3 className={`text-lg font-bold text-${section.color}`}>
-                    {section.title}
-                  </h3>
-                </div>
+                <GlowCard glowColor="blue" customSize className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Icon className={`w-5 h-5 text-${section.color} flex-shrink-0`} />
+                    <h3 className={`text-lg font-bold text-${section.color}`}>
+                      {section.title}
+                    </h3>
+                  </div>
 
-                <motion.ul
-                  variants={listContainerVariants}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  className="space-y-4"
-                >
-                  {section.items.map((item, itemIndex) => (
-                    <motion.li
-                      key={itemIndex}
-                      variants={listItemVariants}
-                      className="flex items-start gap-2"
-                    >
-                      <ChevronRight className={`w-4 h-4 mt-1 text-${section.color}/60 flex-shrink-0`} />
-                      <span className="text-gray-400 text-sm leading-relaxed font-mono">
-                        {item}
-                      </span>
-                    </motion.li>
-                  ))}
-                </motion.ul>
+                  <motion.ul
+                    variants={listContainerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    className="space-y-4"
+                  >
+                    {section.items.map((item, itemIndex) => (
+                      <motion.li
+                        key={itemIndex}
+                        variants={listItemVariants}
+                        className="flex items-start gap-2"
+                      >
+                        <ChevronRight className={`w-4 h-4 mt-1 text-${section.color}/60 flex-shrink-0`} />
+                        <span className="text-gray-400 text-sm leading-relaxed font-mono">
+                          {item}
+                        </span>
+                      </motion.li>
+                    ))}
+                  </motion.ul>
+                </GlowCard>
               </motion.div>
             );
           })}

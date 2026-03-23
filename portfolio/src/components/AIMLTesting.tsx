@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { BrainCircuit, ShieldCheck, LifeBuoy, BarChart3, ArrowRight } from 'lucide-react';
+import { GlowCard } from './ui/spotlight-card';
 
 const capabilities = [
   {
@@ -60,21 +61,21 @@ export const AIMLTesting: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.12 }}
-                whileHover={{ y: -4 }}
-                className="bg-cyber-black/50 backdrop-blur rounded-xl p-6 cyber-border group"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 rounded-lg bg-${cap.color}/10 border border-${cap.color}/20`}>
-                    <Icon className={`w-5 h-5 text-${cap.color}`} />
+                <GlowCard glowColor="blue" customSize className="p-6 group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`p-2 rounded-lg bg-${cap.color}/10 border border-${cap.color}/20`}>
+                      <Icon className={`w-5 h-5 text-${cap.color}`} />
+                    </div>
+                    <h3 className={`text-lg font-bold text-${cap.color}`}>
+                      {cap.title}
+                    </h3>
                   </div>
-                  <h3 className={`text-lg font-bold text-${cap.color}`}>
-                    {cap.title}
-                  </h3>
-                </div>
 
-                <p className="text-gray-400 text-sm leading-relaxed">
-                  {cap.body}
-                </p>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    {cap.body}
+                  </p>
+                </GlowCard>
               </motion.div>
             );
           })}

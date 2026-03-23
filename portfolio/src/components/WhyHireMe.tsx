@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { GitBranch, TrendingUp, Shield, Lightbulb } from 'lucide-react';
+import { GlowCard } from './ui/spotlight-card';
 
 interface HiringCard {
   icon: React.ElementType;
@@ -71,30 +72,26 @@ export const WhyHireMe: React.FC = () => {
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={cardVariants}
-                className="group relative rounded-lg p-6 md:p-8
-                  bg-cyber-black/60 backdrop-blur
-                  border border-cyber-violet/40
-                  transition-all duration-300
-                  hover:border-cyber-violet/80
-                  hover:shadow-[0_0_24px_-4px_rgba(142,68,236,0.25)]"
               >
-                {/* Icon + title */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-md bg-cyber-violet/10 border border-cyber-violet/30 group-hover:border-cyber-violet/60 transition-colors duration-300">
-                    <Icon className="w-5 h-5 text-cyber-cyan" />
+                <GlowCard glowColor="purple" customSize className="p-6 md:p-8 group relative">
+                  {/* Icon + title */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-cyber-violet/10 border border-cyber-violet/30 group-hover:border-cyber-violet/60 transition-colors duration-300">
+                      <Icon className="w-5 h-5 text-cyber-cyan" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-cyber-cyan">
+                      {card.title}
+                    </h3>
                   </div>
-                  <h3 className="text-xl font-semibold text-cyber-cyan">
-                    {card.title}
-                  </h3>
-                </div>
 
-                {/* Body text */}
-                <p className="text-[15px] leading-relaxed text-gray-300">
-                  {card.body}
-                </p>
+                  {/* Body text */}
+                  <p className="text-[15px] leading-relaxed text-gray-300">
+                    {card.body}
+                  </p>
 
-                {/* Subtle bottom accent line on hover */}
-                <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-cyber-violet/0 to-transparent group-hover:via-cyber-violet/50 transition-all duration-500" />
+                  {/* Subtle bottom accent line on hover */}
+                  <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-cyber-violet/0 to-transparent group-hover:via-cyber-violet/50 transition-all duration-500" />
+                </GlowCard>
               </motion.div>
             );
           })}

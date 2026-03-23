@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, AlertTriangle, Target, TrendingUp, Shield, Zap } from 'lucide-react';
+import { GlowCard } from './ui/spotlight-card';
 
 interface ImpactProject {
   title: string;
@@ -133,8 +134,8 @@ export const Projects: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.12 }}
-              className="bg-cyber-black/50 backdrop-blur rounded-xl overflow-hidden cyber-border"
             >
+              <GlowCard glowColor="purple" customSize className="overflow-hidden">
               <div className="p-6 md:p-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
@@ -246,6 +247,7 @@ export const Projects: React.FC = () => {
                   </div>
                 </div>
               </div>
+              </GlowCard>
             </motion.div>
           ))}
         </div>

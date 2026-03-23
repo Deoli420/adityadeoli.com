@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Wrench, ShieldCheck, Layers, TrendingUp } from 'lucide-react';
+import { GlowCard } from './ui/spotlight-card';
 
 const cards = [
   {
@@ -54,21 +55,21 @@ export const OperatingInChaos: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.12 }}
-                whileHover={{ y: -4 }}
-                className="bg-cyber-black/50 backdrop-blur rounded-xl p-6 cyber-border group"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 rounded-lg bg-${card.color}/10 border border-${card.color}/20`}>
-                    <Icon className={`w-5 h-5 text-${card.color}`} />
+                <GlowCard glowColor="orange" customSize className="p-6 group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`p-2 rounded-lg bg-${card.color}/10 border border-${card.color}/20`}>
+                      <Icon className={`w-5 h-5 text-${card.color}`} />
+                    </div>
+                    <h3 className={`text-lg font-bold text-${card.color}`}>
+                      {card.title}
+                    </h3>
                   </div>
-                  <h3 className={`text-lg font-bold text-${card.color}`}>
-                    {card.title}
-                  </h3>
-                </div>
 
-                <p className="text-gray-400 text-sm leading-relaxed">
-                  {card.body}
-                </p>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    {card.body}
+                  </p>
+                </GlowCard>
               </motion.div>
             );
           })}

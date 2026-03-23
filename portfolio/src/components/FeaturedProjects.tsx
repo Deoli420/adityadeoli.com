@@ -5,6 +5,7 @@ import { ArrowRight, ExternalLink, Globe, CheckCircle2, Code2 } from 'lucide-rea
 import { featuredProjects } from '../data/featuredProjects';
 import { useTilt } from '../hooks/useTilt';
 import { useHaptics } from '../hooks/useHaptics';
+import { GlowCard } from './ui/spotlight-card';
 
 /* ── Tilt-enabled project card ─────────────────────────── */
 const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
@@ -61,13 +62,12 @@ export const FeaturedProjects: React.FC = () => {
             const isLastOdd = index === featuredProjects.length - 1 && featuredProjects.length % 2 !== 0;
             return (
               <TiltCard key={project.slug} className={`group ${isLastOdd ? 'lg:col-span-2 lg:max-w-[calc(50%-1rem)] lg:mx-auto' : ''}`}>
+              <GlowCard glowColor="purple" customSize className="overflow-hidden">
               <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.15 }}
-                whileHover={{ y: -6 }}
-                className="bg-cyber-black/50 backdrop-blur rounded-xl overflow-hidden cyber-border"
               >
                 {/* Accent bar */}
                 <div className={`h-1 w-full bg-gradient-to-r from-${project.accentColor}/20 via-${project.accentColor} to-${project.accentColor}/20`} />
@@ -161,6 +161,7 @@ export const FeaturedProjects: React.FC = () => {
                   </div>
                 </div>
               </motion.div>
+              </GlowCard>
               </TiltCard>
             );
           })}
