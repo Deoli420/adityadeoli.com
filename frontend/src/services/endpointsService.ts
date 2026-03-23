@@ -187,6 +187,22 @@ export async function getUptimeOverview(): Promise<UptimeOverviewData> {
   return data;
 }
 
+// ── Feature Summary ──────────────────────────────────────────────────────
+
+export interface FeatureSummary {
+  security_findings_24h: number;
+  schema_drifts_24h: number;
+  ai_analyses_24h: number;
+  high_risk_endpoints: { id: string; name: string; score: number }[];
+}
+
+export async function getFeatureSummary(): Promise<FeatureSummary> {
+  const { data } = await apiClient.get<FeatureSummary>(
+    `${API}/dashboard/feature-summary`,
+  );
+  return data;
+}
+
 // ── SLA ───────────────────────────────────────────────────────────────────
 
 export async function getEndpointSLA(

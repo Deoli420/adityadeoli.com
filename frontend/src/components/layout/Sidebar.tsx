@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAppStore } from "@/stores/appStore.ts";
 import { useAuthStore } from "@/stores/authStore.ts";
 import { authService } from "@/services/authService.ts";
+import { useIncidents } from "@/hooks/useIncidents.ts";
 import {
   LayoutDashboard,
   Plus,
@@ -43,6 +44,8 @@ export function Sidebar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const { data: openIncidents } = useIncidents("OPEN");
+  const openIncidentCount = openIncidents?.length ?? 0;
 
   async function handleLogout() {
     try {
@@ -101,8 +104,22 @@ export function Sidebar() {
               )
             }
           >
-            <Icon className="h-4 w-4 shrink-0" />
+            {to === "/incidents" ? (
+              <span className="relative">
+                <Icon className="h-4 w-4 shrink-0" />
+                {collapsed && openIncidentCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" />
+                )}
+              </span>
+            ) : (
+              <Icon className="h-4 w-4 shrink-0" />
+            )}
             {!collapsed && <span>{label}</span>}
+            {!collapsed && to === "/incidents" && openIncidentCount > 0 && (
+              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                {openIncidentCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

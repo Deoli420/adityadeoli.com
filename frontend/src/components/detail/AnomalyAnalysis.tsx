@@ -149,8 +149,7 @@ export function AnomalyAnalysis({
               AI Anomaly Detection
             </p>
             <p className="text-[11px] text-text-tertiary leading-relaxed mb-3">
-              Analyses API responses using GPT to detect latency spikes,
-              status anomalies, and schema drift. Run the monitor to start.
+              AI analyzes endpoint behavior for anomalies including response time spikes, status code changes, and structural drift. Results will appear here when unusual patterns are detected during monitoring runs.
             </p>
             <button
               onClick={onRunAnalysis}

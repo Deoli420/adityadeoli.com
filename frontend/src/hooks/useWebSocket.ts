@@ -24,6 +24,7 @@ export function useWebSocket() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setConnected = useWsStore((s) => s.setConnected);
   const setLastEvent = useWsStore((s) => s.setLastEvent);
+  const addEvent = useWsStore((s) => s.addEvent);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelay = useRef(WS_RECONNECT_DELAY);
@@ -33,6 +34,7 @@ export function useWebSocket() {
   const handleEvent = useCallback(
     (event: WsEvent) => {
       setLastEvent(event);
+      addEvent(event);
 
       switch (event.type) {
         case "new_run":
@@ -50,8 +52,15 @@ export function useWebSocket() {
         case "risk_update":
           qc.invalidateQueries({ queryKey: ["dashboard-risk-distribution"] });
           qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+          qc.invalidateQueries({ queryKey: ["feature-summary"] });
           if (event.endpoint_id) {
             qc.invalidateQueries({ queryKey: ["endpoint-risk", event.endpoint_id] });
+          }
+          if (typeof event.score === "number" && event.score > 75) {
+            toast(
+              `Risk elevated on ${event.endpoint_name || "endpoint"} — ${event.score}/100`,
+              { icon: "\u{1F6A8}", duration: 4000 },
+            );
           }
           break;
 
@@ -89,7 +98,7 @@ export function useWebSocket() {
           break;
       }
     },
-    [qc, setLastEvent],
+    [qc, setLastEvent, addEvent],
   );
 
   const connect = useCallback(() => {

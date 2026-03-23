@@ -47,7 +47,7 @@ export function SchemaDrift({ drift, isLoading }: SchemaDriftProps) {
           <div className="text-center">
             <Info className="mx-auto h-8 w-8 text-text-tertiary/50 mb-2" />
             <p className="text-xs text-text-tertiary">
-              No schema data yet. Run the monitor to compare schemas.
+              Schema drift compares your API's response structure across monitoring runs. Differences will appear here automatically after at least two runs.
             </p>
           </div>
         </div>

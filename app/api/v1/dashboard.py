@@ -26,6 +26,9 @@ from app.models.api_endpoint import ApiEndpoint
 from app.models.api_run import ApiRun
 from app.models.endpoint_sla import EndpointSLA
 from app.models.risk_score import RiskScore
+from app.models.security_finding import SecurityFinding
+from app.models.schema_snapshot import SchemaSnapshot
+from app.models.ai_telemetry import AiTelemetryRecord
 from app.schemas.dashboard import (
     ResponseTrendsResponse,
     RiskDistribution,
@@ -341,3 +344,99 @@ async def get_uptime_overview(
         )
 
     return UptimeOverviewResponse(entries=entries)
+
+
+# ── Feature Summary ───────────────────────────────────────────────────────
+
+
+class HighRiskEndpointEntry(BaseModel):
+    id: uuid.UUID
+    name: str
+    score: float
+
+
+class FeatureSummaryResponse(BaseModel):
+    security_findings_24h: int
+    schema_drifts_24h: int
+    ai_analyses_24h: int
+    high_risk_endpoints: list[HighRiskEndpointEntry]
+
+
+@router.get("/feature-summary", response_model=FeatureSummaryResponse)
+async def get_feature_summary(
+    user: CurrentUser,
+    tenant_id: TenantId,
+    session: AsyncSession = Depends(get_session),
+):
+    """Aggregated feature counts for the dashboard discovery row."""
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+
+    # Security findings in last 24h
+    sec_count: int = await session.scalar(
+        select(func.count()).where(
+            SecurityFinding.organization_id == tenant_id,
+            SecurityFinding.created_at >= since,
+        )
+    ) or 0
+
+    # Schema drifts in last 24h (snapshots with a non-null diff)
+    drift_count: int = await session.scalar(
+        select(func.count()).where(
+            SchemaSnapshot.organization_id == tenant_id,
+            SchemaSnapshot.created_at >= since,
+            SchemaSnapshot.diff_from_previous.is_not(None),
+        )
+    ) or 0
+
+    # AI analyses in last 24h
+    ai_count: int = await session.scalar(
+        select(func.count()).where(
+            AiTelemetryRecord.organization_id == tenant_id,
+            AiTelemetryRecord.created_at >= since,
+        )
+    ) or 0
+
+    # Endpoints with latest risk > 75
+    latest_run_sq = (
+        select(
+            ApiRun.endpoint_id,
+            func.max(ApiRun.created_at).label("max_created"),
+        )
+        .where(ApiRun.organization_id == tenant_id)
+        .group_by(ApiRun.endpoint_id)
+        .subquery()
+    )
+
+    high_risk_rows = await session.execute(
+        select(
+            ApiEndpoint.id,
+            ApiEndpoint.name,
+            RiskScore.calculated_score,
+        )
+        .join(ApiRun, RiskScore.api_run_id == ApiRun.id)
+        .join(
+            latest_run_sq,
+            (ApiRun.endpoint_id == latest_run_sq.c.endpoint_id)
+            & (ApiRun.created_at == latest_run_sq.c.max_created),
+        )
+        .join(ApiEndpoint, ApiRun.endpoint_id == ApiEndpoint.id)
+        .where(RiskScore.calculated_score >= 75)
+        .order_by(RiskScore.calculated_score.desc())
+        .limit(10)
+    )
+
+    high_risk = [
+        HighRiskEndpointEntry(
+            id=row.id,
+            name=row.name,
+            score=round(row.calculated_score, 1),
+        )
+        for row in high_risk_rows
+    ]
+
+    return FeatureSummaryResponse(
+        security_findings_24h=sec_count,
+        schema_drifts_24h=drift_count,
+        ai_analyses_24h=ai_count,
+        high_risk_endpoints=high_risk,
+    )

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Plus,
@@ -23,12 +23,17 @@ import { EmptyState } from "@/components/common/EmptyState.tsx";
 import { ErrorState } from "@/components/common/ErrorState.tsx";
 import { RiskBadge } from "@/components/common/RiskBadge.tsx";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist.tsx";
+import { AttentionBanner } from "@/components/dashboard/AttentionBanner.tsx";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed.tsx";
+import { FeatureSummaryRow } from "@/components/dashboard/FeatureSummaryRow.tsx";
 import { ResponseTrendsChart } from "@/components/dashboard/ResponseTrendsChart.tsx";
 import { TopFailuresWidget } from "@/components/dashboard/TopFailuresWidget.tsx";
 import { RiskDistributionChart } from "@/components/dashboard/RiskDistributionChart.tsx";
 import { UptimeOverview } from "@/components/dashboard/UptimeOverview.tsx";
-import { formatMethod, timeAgo, formatMs } from "@/utils/formatters.ts";
+import { formatMethod, formatMs } from "@/utils/formatters.ts";
 import { scoreToLevel } from "@/utils/riskUtils.ts";
+import { useRelativeTime } from "@/hooks/useRelativeTime.ts";
+import { useWsStore } from "@/stores/wsStore.ts";
 import type { ApiEndpoint, ApiRunSummary } from "@/types/index.ts";
 import clsx from "clsx";
 
@@ -92,6 +97,9 @@ export function DashboardPage() {
       {/* Onboarding Checklist */}
       <OnboardingChecklist />
 
+      {/* Attention Banner */}
+      <AttentionBanner />
+
       {/* KPI Row */}
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -103,18 +111,24 @@ export function DashboardPage() {
         <DashboardKPIs stats={stats ?? null} endpointCount={endpointCount} />
       )}
 
+      {/* Feature Summary Row */}
+      <FeatureSummaryRow />
+
       {/* Chart Widgets */}
       {!isLoading && endpoints && endpoints.length > 0 && (
-        <>
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 space-y-5">
             <ResponseTrendsChart />
-            <TopFailuresWidget />
-          </div>
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <RiskDistributionChart />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <TopFailuresWidget />
+              <RiskDistributionChart />
+            </div>
             <UptimeOverview />
           </div>
-        </>
+          <div className="lg:col-span-1">
+            <ActivityFeed />
+          </div>
+        </div>
       )}
 
       {/* Endpoint Table */}
@@ -371,8 +385,20 @@ function EndpointRow({ endpoint: ep }: { endpoint: ApiEndpoint }) {
   const lastStatus = lastRun?.status_code ?? 0;
   const isHealthy = lastStatus >= 200 && lastStatus < 400;
 
+  const lastEvent = useWsStore((s) => s.lastEvent);
+  const [pulse, setPulse] = useState(false);
+  const relativeTime = useRelativeTime(lastRun?.created_at ?? ep.created_at);
+
+  useEffect(() => {
+    if (lastEvent?.type === "new_run" && lastEvent?.endpoint_id === ep.id) {
+      setPulse(true);
+      const t = setTimeout(() => setPulse(false), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [lastEvent, ep.id]);
+
   return (
-    <tr className="group transition-colors hover:bg-surface-secondary/50">
+    <tr className={clsx("group transition-colors hover:bg-surface-secondary/50", pulse && "bg-risk-low/5")}>
       <td className="px-5 py-3.5">
         <Link
           to={`/endpoints/${ep.id}`}
@@ -444,7 +470,7 @@ function EndpointRow({ endpoint: ep }: { endpoint: ApiEndpoint }) {
         )}
       </td>
       <td className="px-5 py-3.5 text-xs text-text-secondary">
-        {timeAgo(lastRun?.created_at ?? ep.created_at)}
+        {relativeTime}
       </td>
       <td className="pr-3">
         <Link

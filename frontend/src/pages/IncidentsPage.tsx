@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useIncidents } from "@/hooks/useIncidents.ts";
+import { useIncidents, useUpdateIncidentStatus } from "@/hooks/useIncidents.ts";
+import { formatDuration } from "@/utils/formatters.ts";
+import { IncidentSummaryBanner } from "@/components/incidents/IncidentSummaryBanner.tsx";
 import {
   AlertTriangle,
   Search,
@@ -8,6 +10,10 @@ import {
   CheckCircle2,
   ShieldAlert,
   ArrowRight,
+  Brain,
+  Bell,
+  UserCircle,
+  Loader2,
 } from "lucide-react";
 import clsx from "clsx";
 import type { IncidentListItem, IncidentStatus, IncidentSeverity } from "@/types/index.ts";
@@ -32,6 +38,12 @@ const STATUS_COLORS: Record<IncidentStatus, string> = {
   RESOLVED: "bg-emerald-500/15 text-emerald-400",
 };
 
+const TRIGGER_CONFIG: Record<string, { icon: React.ElementType; label: string }> = {
+  anomaly: { icon: Brain, label: "AI anomaly detection" },
+  alert_rule: { icon: Bell, label: "Alert rule" },
+  manual: { icon: UserCircle, label: "Manual" },
+};
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -43,6 +55,27 @@ function timeAgo(dateStr: string): string {
 }
 
 function IncidentRow({ incident }: { incident: IncidentListItem }) {
+  const updateStatus = useUpdateIncidentStatus(incident.id);
+
+  const trigger = TRIGGER_CONFIG[incident.trigger_type] ?? {
+    icon: AlertTriangle,
+    label: incident.trigger_type,
+  };
+  const TriggerIcon = trigger.icon;
+
+  // Duration display
+  let durationLabel: string | null = null;
+  if (incident.status === "OPEN" || incident.status === "INVESTIGATING") {
+    durationLabel =
+      "Open for " + formatDuration(Date.now() - new Date(incident.started_at).getTime());
+  } else if (incident.status === "RESOLVED" && incident.resolved_at) {
+    durationLabel =
+      "Resolved in " +
+      formatDuration(
+        new Date(incident.resolved_at).getTime() - new Date(incident.started_at).getTime(),
+      );
+  }
+
   return (
     <Link
       to={`/incidents/${incident.id}`}
@@ -65,12 +98,27 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
           {incident.title}
         </p>
         <div className="mt-1 flex items-center gap-3 text-xs text-text-secondary">
-          <span>{incident.endpoint_name || "Unknown endpoint"}</span>
+          <Link
+            to={`/endpoints/${incident.endpoint_id}`}
+            className="text-accent hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {incident.endpoint_name || "Unknown"}
+          </Link>
           <span className="text-text-tertiary">|</span>
-          <span className="capitalize">{incident.trigger_type}</span>
+          <span className="flex items-center gap-1 capitalize">
+            <TriggerIcon className="h-3 w-3" />
+            {trigger.label}
+          </span>
           <span className="text-text-tertiary">|</span>
           <Clock className="h-3 w-3" />
           <span>{timeAgo(incident.started_at)}</span>
+          {durationLabel && (
+            <>
+              <span className="text-text-tertiary">|</span>
+              <span>{durationLabel}</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -91,6 +139,42 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
       >
         {incident.status}
       </span>
+
+      {/* Quick action buttons */}
+      {incident.status === "OPEN" && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateStatus.mutate({ status: "INVESTIGATING" });
+          }}
+          disabled={updateStatus.isPending}
+          className="shrink-0 text-[11px] px-2 py-1 rounded-md border border-border hover:bg-surface-tertiary text-text-secondary font-medium transition-colors"
+        >
+          {updateStatus.isPending ? (
+            <Loader2 className="animate-spin h-3 w-3" />
+          ) : (
+            "Acknowledge"
+          )}
+        </button>
+      )}
+      {incident.status === "INVESTIGATING" && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateStatus.mutate({ status: "RESOLVED" });
+          }}
+          disabled={updateStatus.isPending}
+          className="shrink-0 text-[11px] px-2 py-1 rounded-md border border-border hover:bg-surface-tertiary text-text-secondary font-medium transition-colors"
+        >
+          {updateStatus.isPending ? (
+            <Loader2 className="animate-spin h-3 w-3" />
+          ) : (
+            "Resolve"
+          )}
+        </button>
+      )}
 
       <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary" />
     </Link>
@@ -114,6 +198,7 @@ function SkeletonRow() {
 export function IncidentsPage() {
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
   const { data: incidents, isLoading } = useIncidents(activeTab);
+  const { data: allIncidents } = useIncidents(undefined);
 
   const openCount = incidents?.filter((i) => i.status === "OPEN").length ?? 0;
 
@@ -135,6 +220,9 @@ export function IncidentsPage() {
           </div>
         </div>
       </div>
+
+      {/* Summary Banner */}
+      <IncidentSummaryBanner incidents={allIncidents ?? []} />
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-xl bg-surface-tertiary p-1">

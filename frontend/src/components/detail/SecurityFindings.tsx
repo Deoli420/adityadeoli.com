@@ -38,9 +38,26 @@ export function SecurityFindings({ endpointId }: { endpointId: string }) {
     );
   }
 
-  // Don't render anything if no findings exist
+  // Empty state — educate user about what this panel does
   if (!findings || findings.length === 0) {
-    return null;
+    return (
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10">
+            <Shield className="h-4 w-4 text-red-400" />
+          </div>
+          <h3 className="text-sm font-medium text-text-primary">
+            Security Findings
+          </h3>
+        </div>
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <Shield className="mb-2 h-8 w-8 text-text-tertiary/40" />
+          <p className="text-xs text-text-tertiary">
+            The security scanner checks API responses for leaked credentials, tokens, and sensitive data patterns. Findings will appear here when detected during monitoring runs.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

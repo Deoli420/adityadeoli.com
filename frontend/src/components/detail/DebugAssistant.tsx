@@ -69,8 +69,7 @@ export function DebugAssistant({ endpointId }: { endpointId: string }) {
         <div className="flex flex-col items-center justify-center py-6 text-center">
           <Brain className="mb-2 h-8 w-8 text-text-tertiary/40" />
           <p className="text-xs text-text-tertiary">
-            Click "Ask AI to Debug" to generate debugging suggestions
-            when anomalies are detected.
+            The AI debug assistant analyzes endpoint failures to suggest root causes and remediation steps. It activates automatically when anomalies or repeated failures are detected.
           </p>
         </div>
       )}

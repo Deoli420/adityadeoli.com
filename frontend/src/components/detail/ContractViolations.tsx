@@ -135,8 +135,7 @@ export function ContractViolations({ endpointId }: { endpointId: string }) {
         <div className="flex flex-col items-center justify-center py-6 text-center">
           <CheckCircle2 className="mb-2 h-8 w-8 text-risk-low/40" />
           <p className="text-xs text-text-tertiary">
-            No contract violations detected. Upload an OpenAPI spec to enable
-            validation.
+            Contract testing validates API responses against your OpenAPI specification. Upload a spec above to start checking for schema and behavior violations.
           </p>
         </div>
       )}
