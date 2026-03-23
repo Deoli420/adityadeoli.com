@@ -16,14 +16,20 @@ export function useAuth() {
   };
 }
 
-/** True if the current user can create/edit endpoints (ADMIN or MEMBER). */
+/** True if the current user can create/edit endpoints (OWNER, ADMIN, or MEMBER). */
 export function useCanWrite() {
   const role = useAuthStore((s) => s.user?.role);
-  return role === "ADMIN" || role === "MEMBER";
+  return role === "OWNER" || role === "ADMIN" || role === "MEMBER";
 }
 
-/** True if the current user is an ADMIN. */
+/** True if the current user is an OWNER or ADMIN. */
 export function useIsAdmin() {
   const role = useAuthStore((s) => s.user?.role);
-  return role === "ADMIN";
+  return role === "OWNER" || role === "ADMIN";
+}
+
+/** True if the current user is the organization OWNER. */
+export function useIsOwner() {
+  const role = useAuthStore((s) => s.user?.role);
+  return role === "OWNER";
 }

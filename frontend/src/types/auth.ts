@@ -4,7 +4,7 @@ export interface Organization {
   slug: string;
 }
 
-export type UserRole = "ADMIN" | "MEMBER" | "VIEWER";
+export type UserRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
 
 export interface User {
   id: string;
