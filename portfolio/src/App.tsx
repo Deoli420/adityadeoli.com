@@ -9,8 +9,6 @@ import { EngineeringThinking } from './components/EngineeringThinking';
 import { OperatingInChaos } from './components/OperatingInChaos';
 import { Web3Security } from './components/Web3Security';
 import { AIMLTesting } from './components/AIMLTesting';
-import { SystemSimulations } from './components/SystemSimulations';
-import { Testimonials } from './components/Testimonials';
 import { CTASection } from './components/CTASection';
 import { RecruiterShortcut } from './components/RecruiterShortcut';
 import { Contact } from './components/Contact';
@@ -81,8 +79,6 @@ function App() {
         <OperatingInChaos />
         <Web3Security />
         <AIMLTesting />
-        <SystemSimulations />
-        <Testimonials />
         <CTASection />
 
         <Contact />

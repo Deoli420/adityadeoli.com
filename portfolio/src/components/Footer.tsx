@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Bug } from 'lucide-react';
 import { ReportBugModal } from './ReportBugModal';
-import { EmergencyButton } from './EmergencyButton';
 
 export const Footer: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,8 +34,6 @@ export const Footer: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
-      
-      <EmergencyButton />
     </footer>
   );
 };
