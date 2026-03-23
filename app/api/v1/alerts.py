@@ -13,7 +13,7 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 @router.get(
     "/config",
     summary="Get alert system configuration and status",
-    dependencies=[Depends(require_role(UserRole.ADMIN))],
+    dependencies=[Depends(require_role(UserRole.OWNER, UserRole.ADMIN))],
 )
 async def get_alert_config() -> dict[str, Any]:
     """
@@ -34,7 +34,7 @@ async def get_alert_config() -> dict[str, Any]:
 @router.post(
     "/test",
     summary="Send a test webhook to verify connectivity",
-    dependencies=[Depends(require_role(UserRole.ADMIN))],
+    dependencies=[Depends(require_role(UserRole.OWNER, UserRole.ADMIN))],
 )
 async def test_webhook() -> dict[str, Any]:
     """

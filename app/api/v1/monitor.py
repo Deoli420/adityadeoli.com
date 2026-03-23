@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.monitoring.anomaly_engine import AnomalyEngine
 from app.monitoring.api_runner import api_runner
@@ -122,6 +122,7 @@ def _map_perf(pipeline) -> PerformanceReadout | None:
     response_model=MonitorRunResult,
     status_code=201,
     summary="Trigger a single test run for an endpoint",
+    dependencies=[RequireWrite],
 )
 async def trigger_run(
     endpoint_id: uuid.UUID,

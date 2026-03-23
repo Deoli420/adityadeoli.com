@@ -27,7 +27,7 @@ async def get_status(
     "/sync",
     status_code=200,
     summary="Sync scheduled jobs to current endpoints",
-    dependencies=[Depends(require_role(UserRole.ADMIN))],
+    dependencies=[Depends(require_role(UserRole.OWNER, UserRole.ADMIN))],
 )
 async def sync_jobs() -> dict[str, Any]:
     """

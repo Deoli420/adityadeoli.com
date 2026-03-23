@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.services.debug_assistant import generate_debug_suggestions
 
@@ -34,6 +34,7 @@ _latest_cache: dict[tuple[str, str], dict] = {}
 @router.post(
     "/{endpoint_id}/suggest",
     response_model=DebugSuggestionResponse,
+    dependencies=[RequireWrite],
 )
 async def trigger_debug_analysis(
     endpoint_id: uuid.UUID,

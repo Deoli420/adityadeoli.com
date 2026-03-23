@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.repositories.incident import IncidentRepository
 from app.schemas.incident import (
@@ -68,7 +68,7 @@ async def list_by_endpoint(
     return await service.list_by_endpoint(endpoint_id, tenant_id, limit=limit)
 
 
-@router.post("/", response_model=IncidentRead, status_code=201)
+@router.post("/", response_model=IncidentRead, status_code=201, dependencies=[RequireWrite])
 async def create_incident(
     data: IncidentCreate,
     user: CurrentUser,
@@ -78,7 +78,7 @@ async def create_incident(
     return await service.create_incident(data, tenant_id)
 
 
-@router.patch("/{incident_id}/status", response_model=IncidentRead)
+@router.patch("/{incident_id}/status", response_model=IncidentRead, dependencies=[RequireWrite])
 async def update_status(
     incident_id: uuid.UUID,
     data: IncidentStatusUpdate,
@@ -89,7 +89,7 @@ async def update_status(
     return await service.update_status(incident_id, data, tenant_id)
 
 
-@router.post("/{incident_id}/notes", response_model=IncidentRead)
+@router.post("/{incident_id}/notes", response_model=IncidentRead, dependencies=[RequireWrite])
 async def add_note(
     incident_id: uuid.UUID,
     data: IncidentNoteCreate,

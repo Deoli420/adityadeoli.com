@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.repositories.alert_rule import AlertRuleRepository
 from app.schemas.alert_rule import AlertRuleCreate, AlertRuleRead, AlertRuleUpdate
@@ -36,7 +36,7 @@ async def get_rule(
     return await service.get_rule(rule_id, tenant_id)
 
 
-@router.post("/", response_model=AlertRuleRead, status_code=201)
+@router.post("/", response_model=AlertRuleRead, status_code=201, dependencies=[RequireWrite])
 async def create_rule(
     data: AlertRuleCreate,
     user: CurrentUser,
@@ -46,7 +46,7 @@ async def create_rule(
     return await service.create_rule(data, tenant_id)
 
 
-@router.patch("/{rule_id}", response_model=AlertRuleRead)
+@router.patch("/{rule_id}", response_model=AlertRuleRead, dependencies=[RequireWrite])
 async def update_rule(
     rule_id: uuid.UUID,
     data: AlertRuleUpdate,
@@ -57,7 +57,7 @@ async def update_rule(
     return await service.update_rule(rule_id, data, tenant_id)
 
 
-@router.delete("/{rule_id}", status_code=204)
+@router.delete("/{rule_id}", status_code=204, dependencies=[RequireWrite])
 async def delete_rule(
     rule_id: uuid.UUID,
     user: CurrentUser,
@@ -67,7 +67,7 @@ async def delete_rule(
     await service.delete_rule(rule_id, tenant_id)
 
 
-@router.post("/{rule_id}/toggle", response_model=AlertRuleRead)
+@router.post("/{rule_id}/toggle", response_model=AlertRuleRead, dependencies=[RequireWrite])
 async def toggle_rule(
     rule_id: uuid.UUID,
     user: CurrentUser,

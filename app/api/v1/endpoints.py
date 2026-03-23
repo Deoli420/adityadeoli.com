@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.repositories.api_endpoint import ApiEndpointRepository
 from app.schemas.api_endpoint import (
@@ -40,7 +40,7 @@ async def get_endpoint(
     return await service.get_endpoint(endpoint_id, tenant_id)
 
 
-@router.post("/", response_model=ApiEndpointRead, status_code=201)
+@router.post("/", response_model=ApiEndpointRead, status_code=201, dependencies=[RequireWrite])
 async def create_endpoint(
     data: ApiEndpointCreate,
     user: CurrentUser,
@@ -50,7 +50,7 @@ async def create_endpoint(
     return await service.create_endpoint(data, tenant_id)
 
 
-@router.patch("/{endpoint_id}", response_model=ApiEndpointRead)
+@router.patch("/{endpoint_id}", response_model=ApiEndpointRead, dependencies=[RequireWrite])
 async def update_endpoint(
     endpoint_id: uuid.UUID,
     data: ApiEndpointUpdate,
@@ -61,7 +61,7 @@ async def update_endpoint(
     return await service.update_endpoint(endpoint_id, data, tenant_id)
 
 
-@router.delete("/{endpoint_id}", status_code=204)
+@router.delete("/{endpoint_id}", status_code=204, dependencies=[RequireWrite])
 async def delete_endpoint(
     endpoint_id: uuid.UUID,
     user: CurrentUser,

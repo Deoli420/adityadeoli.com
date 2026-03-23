@@ -13,7 +13,7 @@ import uuid
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.monitoring.contract_validator import contract_validator
 from app.repositories.api_endpoint import ApiEndpointRepository
@@ -30,6 +30,7 @@ router = APIRouter(prefix="/contracts", tags=["contracts"])
 @router.post(
     "/{endpoint_id}/upload",
     response_model=SpecUploadResponse,
+    dependencies=[RequireWrite],
 )
 async def upload_spec(
     endpoint_id: uuid.UUID,
@@ -139,6 +140,7 @@ async def get_violations(
 @router.post(
     "/{endpoint_id}/validate",
     response_model=ContractValidationResponse,
+    dependencies=[RequireWrite],
 )
 async def trigger_validation(
     endpoint_id: uuid.UUID,

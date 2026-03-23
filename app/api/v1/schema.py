@@ -13,7 +13,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.repositories.api_endpoint import ApiEndpointRepository
 from app.repositories.schema_snapshot import SchemaSnapshotRepository
@@ -123,7 +123,7 @@ async def get_schema_diff(
     )
 
 
-@router.post("/{endpoint_id}/accept", response_model=SchemaSnapshotResponse)
+@router.post("/{endpoint_id}/accept", response_model=SchemaSnapshotResponse, dependencies=[RequireWrite])
 async def accept_schema(
     endpoint_id: uuid.UUID,
     user: CurrentUser,

@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUser, TenantId
+from app.core.auth import CurrentUser, RequireWrite, TenantId
 from app.db.session import get_session
 from app.repositories.api_run import ApiRunRepository
 from app.repositories.endpoint_sla import EndpointSLARepository
@@ -45,7 +45,7 @@ async def get_uptime(
     return await service.get_uptime(endpoint_id, tenant_id)
 
 
-@router.post("/", response_model=EndpointSLARead, status_code=201)
+@router.post("/", response_model=EndpointSLARead, status_code=201, dependencies=[RequireWrite])
 async def create_sla(
     data: EndpointSLACreate,
     user: CurrentUser,
@@ -55,7 +55,7 @@ async def create_sla(
     return await service.create_sla(data, tenant_id)
 
 
-@router.patch("/{endpoint_id}", response_model=EndpointSLARead)
+@router.patch("/{endpoint_id}", response_model=EndpointSLARead, dependencies=[RequireWrite])
 async def update_sla(
     endpoint_id: uuid.UUID,
     data: EndpointSLAUpdate,
@@ -66,7 +66,7 @@ async def update_sla(
     return await service.update_sla(endpoint_id, data, tenant_id)
 
 
-@router.delete("/{endpoint_id}", status_code=204)
+@router.delete("/{endpoint_id}", status_code=204, dependencies=[RequireWrite])
 async def delete_sla(
     endpoint_id: uuid.UUID,
     user: CurrentUser,

@@ -64,3 +64,8 @@ async def get_tenant_id(user: User = Depends(get_current_user)) -> uuid.UUID:
 # ── Type aliases for cleaner route signatures ────────────────────────
 CurrentUser = Annotated[User, Depends(get_current_user)]
 TenantId = Annotated[uuid.UUID, Depends(get_tenant_id)]
+
+# ── Convenience dependencies for route protection ────────────────────
+RequireWrite = Depends(require_role(UserRole.OWNER, UserRole.ADMIN, UserRole.MEMBER))
+RequireAdmin = Depends(require_role(UserRole.OWNER, UserRole.ADMIN))
+RequireOwner = Depends(require_role(UserRole.OWNER))
