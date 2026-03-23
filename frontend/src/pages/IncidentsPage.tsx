@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useCanWrite } from "@/hooks/useAuth.ts";
 import { useIncidents, useUpdateIncidentStatus } from "@/hooks/useIncidents.ts";
 import { formatDuration } from "@/utils/formatters.ts";
 import { IncidentSummaryBanner } from "@/components/incidents/IncidentSummaryBanner.tsx";
@@ -55,6 +56,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function IncidentRow({ incident }: { incident: IncidentListItem }) {
+  const canWrite = useCanWrite();
   const updateStatus = useUpdateIncidentStatus(incident.id);
 
   const trigger = TRIGGER_CONFIG[incident.trigger_type] ?? {
@@ -141,7 +143,7 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
       </span>
 
       {/* Quick action buttons */}
-      {incident.status === "OPEN" && (
+      {canWrite && incident.status === "OPEN" && (
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -158,7 +160,7 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
           )}
         </button>
       )}
-      {incident.status === "INVESTIGATING" && (
+      {canWrite && incident.status === "INVESTIGATING" && (
         <button
           onClick={(e) => {
             e.preventDefault();

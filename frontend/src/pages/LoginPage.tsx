@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { authService } from "@/services/authService.ts";
 import { useAuthStore } from "@/stores/authStore.ts";
@@ -145,8 +145,16 @@ export function LoginPage() {
           </form>
         </div>
 
+        {/* Signup link */}
+        <p className="mt-4 text-center text-xs text-text-secondary">
+          Don't have an account?{" "}
+          <Link to="/signup" className="font-medium text-accent hover:underline">
+            Create one
+          </Link>
+        </p>
+
         {/* Footer */}
-        <p className="mt-4 text-center text-[10px] text-text-tertiary">
+        <p className="mt-3 text-center text-[10px] text-text-tertiary">
           Protected by SentinelAI &middot; Multi-tenant monitoring
         </p>
       </div>

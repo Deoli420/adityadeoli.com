@@ -11,8 +11,14 @@ import { ExportPage } from "@/pages/ExportPage.tsx";
 import { AiTelemetryPage } from "@/pages/AiTelemetryPage.tsx";
 import { SecurityPage } from "@/pages/SecurityPage.tsx";
 import { LoginPage } from "@/pages/LoginPage.tsx";
+import { SignupPage } from "@/pages/SignupPage.tsx";
+import { JoinPage } from "@/pages/JoinPage.tsx";
 import { NotFoundPage } from "@/pages/NotFoundPage.tsx";
 import { PrivateRoute } from "@/components/auth/PrivateRoute.tsx";
+import { SettingsLayout } from "@/pages/settings/SettingsLayout.tsx";
+import { ProfileSettings } from "@/pages/settings/ProfileSettings.tsx";
+import { TeamSettings } from "@/pages/settings/TeamSettings.tsx";
+import { OrgSettings } from "@/pages/settings/OrgSettings.tsx";
 
 /**
  * SentinelAI route definitions.
@@ -24,6 +30,8 @@ import { PrivateRoute } from "@/components/auth/PrivateRoute.tsx";
  */
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/signup", element: <SignupPage /> },
+  { path: "/join/:token", element: <JoinPage /> },
   {
     element: <PrivateRoute />,
     children: [
@@ -41,6 +49,15 @@ export const router = createBrowserRouter([
           { path: "ai-telemetry", element: <AiTelemetryPage /> },
           { path: "security", element: <SecurityPage /> },
           { path: "api-tester", element: <ApiTesterPage /> },
+          {
+            path: "settings",
+            element: <SettingsLayout />,
+            children: [
+              { index: true, element: <ProfileSettings /> },
+              { path: "team", element: <TeamSettings /> },
+              { path: "organization", element: <OrgSettings /> },
+            ],
+          },
           { path: "*", element: <NotFoundPage /> },
         ],
       },

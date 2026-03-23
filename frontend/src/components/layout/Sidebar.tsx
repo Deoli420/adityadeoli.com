@@ -3,6 +3,7 @@ import { useAppStore } from "@/stores/appStore.ts";
 import { useAuthStore } from "@/stores/authStore.ts";
 import { authService } from "@/services/authService.ts";
 import { useIncidents } from "@/hooks/useIncidents.ts";
+import { useCanWrite } from "@/hooks/useAuth.ts";
 import {
   LayoutDashboard,
   Plus,
@@ -11,6 +12,7 @@ import {
   Download,
   Brain,
   Shield,
+  Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -18,14 +20,15 @@ import {
 import clsx from "clsx";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/incidents", label: "Incidents", icon: AlertTriangle },
-  { to: "/ai-telemetry", label: "AI Telemetry", icon: Brain },
-  { to: "/security", label: "Security", icon: Shield },
-  { to: "/export", label: "Export", icon: Download },
-  { to: "/endpoints/new", label: "Add Endpoint", icon: Plus },
-  { to: "/api-tester", label: "API Tester", icon: Zap },
-] as const;
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, writeOnly: false },
+  { to: "/incidents", label: "Incidents", icon: AlertTriangle, writeOnly: false },
+  { to: "/ai-telemetry", label: "AI Telemetry", icon: Brain, writeOnly: false },
+  { to: "/security", label: "Security", icon: Shield, writeOnly: false },
+  { to: "/export", label: "Export", icon: Download, writeOnly: false },
+  { to: "/endpoints/new", label: "Add Endpoint", icon: Plus, writeOnly: true },
+  { to: "/api-tester", label: "API Tester", icon: Zap, writeOnly: false },
+  { to: "/settings", label: "Settings", icon: Settings, writeOnly: false },
+];
 
 /**
  * Fixed sidebar — dark variant inspired by Linear/Vercel.
@@ -44,6 +47,7 @@ export function Sidebar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const canWrite = useCanWrite();
   const { data: openIncidents } = useIncidents("OPEN");
   const openIncidentCount = openIncidents?.length ?? 0;
 
@@ -90,7 +94,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5 px-2 py-3">
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+        {NAV_ITEMS.filter((item) => !item.writeOnly || canWrite).map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

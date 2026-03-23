@@ -12,6 +12,7 @@ import {
   ArrowDownRight,
   Search,
 } from "lucide-react";
+import { useCanWrite } from "@/hooks/useAuth.ts";
 import { useEndpoints, useDashboardStats } from "@/hooks/useEndpoints.ts";
 import {
   useLatestRisk,
@@ -48,6 +49,7 @@ import clsx from "clsx";
 const METHOD_OPTIONS = ["ALL", "GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 export function DashboardPage() {
+  const canWrite = useCanWrite();
   const { data: endpoints, isLoading, isError, refetch } = useEndpoints();
   const { data: stats } = useDashboardStats();
 
@@ -88,10 +90,12 @@ export function DashboardPage() {
             Real-time health across all monitored endpoints
           </p>
         </div>
-        <Link to="/endpoints/new" className="btn-primary">
-          <Plus className="h-3.5 w-3.5" />
-          Add Endpoint
-        </Link>
+        {canWrite && (
+          <Link to="/endpoints/new" className="btn-primary">
+            <Plus className="h-3.5 w-3.5" />
+            Add Endpoint
+          </Link>
+        )}
       </div>
 
       {/* Onboarding Checklist */}
