@@ -38,6 +38,7 @@ import app.models.alert_rule  # noqa: F401, E402
 import app.models.schema_snapshot  # noqa: F401, E402
 import app.models.security_finding  # noqa: F401, E402
 import app.models.ai_telemetry  # noqa: F401, E402
+import app.models.invite  # noqa: F401, E402
 
 
 DEFAULT_ORG_NAME = "SentinelAI"
@@ -84,7 +85,7 @@ async def seed(session: AsyncSession) -> None:
             email=DEFAULT_ADMIN_EMAIL,
             password_hash=password_hash,
             display_name=DEFAULT_ADMIN_DISPLAY_NAME,
-            role=UserRole.ADMIN,
+            role=UserRole.OWNER,
             organization_id=org.id,
         )
         session.add(admin)
