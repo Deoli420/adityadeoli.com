@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { PawPrint } from 'lucide-react';
 
@@ -9,26 +9,29 @@ interface Position {
 
 export const LaserPointerCat: React.FC = () => {
   const [isActive, setIsActive] = useState(false);
-  const [mousePos, setMousePos] = useState<Position>({ x: 0, y: 0 });
-  const [catPos, setCatPos] = useState<Position>({ x: 0, y: 0 });
   const [isIdle, setIsIdle] = useState(false);
+  const mousePosRef = useRef<Position>({ x: 0, y: 0 });
+  const catPosRef = useRef<Position>({ x: 0, y: 0 });
+  const [catPos, setCatPos] = useState<Position>({ x: 0, y: 0 });
+  const [mousePos, setMousePos] = useState<Position>({ x: 0, y: 0 });
   const idleTimerRef = useRef<NodeJS.Timeout>();
+  const rafRef = useRef<number>();
   const catControls = useAnimation();
+
+  const resetIdleTimer = useCallback(() => {
+    setIsIdle(false);
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+    }
+    idleTimerRef.current = setTimeout(() => setIsIdle(true), 30000);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isActive) return;
-      
+      mousePosRef.current = { x: e.clientX, y: e.clientY };
       setMousePos({ x: e.clientX, y: e.clientY });
       resetIdleTimer();
-    };
-
-    const resetIdleTimer = () => {
-      setIsIdle(false);
-      if (idleTimerRef.current) {
-        clearTimeout(idleTimerRef.current);
-      }
-      idleTimerRef.current = setTimeout(() => setIsIdle(true), 30000);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -36,56 +39,73 @@ export const LaserPointerCat: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
-  }, [isActive]);
+  }, [isActive, resetIdleTimer]);
 
+  // RAF-based animation loop for smooth 60fps cat following
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
+      }
+      return;
+    }
 
-    const animateCat = async () => {
-      const dx = mousePos.x - catPos.x;
-      const dy = mousePos.y - catPos.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    const tick = () => {
+      const mouse = mousePosRef.current;
+      const cat = catPosRef.current;
 
-      const newX = catPos.x + dx * 0.1;
-      const newY = catPos.y + dy * 0.1;
+      const dx = mouse.x - cat.x;
+      const dy = mouse.y - cat.y;
 
+      const newX = cat.x + dx * 0.1;
+      const newY = cat.y + dy * 0.1;
+
+      catPosRef.current = { x: newX, y: newY };
       setCatPos({ x: newX, y: newY });
-      
-      // Calculate rotation so the cat's face points toward the laser
-      // Since the cat SVG faces right by default, we don't need to add 180 degrees
+
       const rotation = Math.atan2(dy, dx) * (180 / Math.PI);
-      
-      await catControls.start({
+
+      catControls.start({
         x: newX,
         y: newY,
         rotate: rotation,
-        transition: { type: 'spring', stiffness: 200, damping: 20 }
+        transition: { type: 'spring', stiffness: 200, damping: 28 }
       });
+
+      rafRef.current = requestAnimationFrame(tick);
     };
 
-    const interval = setInterval(animateCat, 50);
-    return () => clearInterval(interval);
-  }, [isActive, mousePos, catPos, catControls]);
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
+      }
+    };
+  }, [isActive, catControls]);
 
   const toggleCat = () => {
     setIsActive(!isActive);
     if (!isActive) {
-      // Start cat from bottom right
-      setCatPos({ 
-        x: window.innerWidth - 100, 
-        y: window.innerHeight - 100 
-      });
+      const startPos = {
+        x: window.innerWidth - 100,
+        y: window.innerHeight - 100
+      };
+      catPosRef.current = startPos;
+      setCatPos(startPos);
     }
   };
 
   return (
     <>
       <motion.button
-        className="fixed top-4 left-4 p-2 rounded-full bg-cyber-black/50 backdrop-blur-sm z-50 cursor-pointer"
+        className="fixed top-4 left-4 p-2 rounded-full bg-cyber-black/50 backdrop-blur-sm z-[70] cursor-pointer border border-cyber-violet/30"
         whileHover={{ scale: 1.1, opacity: 1 }}
         initial={{ opacity: 0.5 }}
         onClick={toggleCat}
-        title="Toggle Cat Chase Mode 🐾"
+        title="Toggle Cat Chase Mode"
       >
         <PawPrint className="w-6 h-6 text-cyber-violet" />
       </motion.button>
@@ -93,9 +113,10 @@ export const LaserPointerCat: React.FC = () => {
       <AnimatePresence>
         {isActive && (
           <>
+            {/* Laser dot */}
             <motion.div
-              className="fixed pointer-events-none z-40"
-              style={{ 
+              className="fixed pointer-events-none z-[60]"
+              style={{
                 left: mousePos.x - 6,
                 top: mousePos.y - 6,
                 width: 12,
@@ -109,12 +130,13 @@ export const LaserPointerCat: React.FC = () => {
               exit={{ opacity: 0 }}
             />
 
+            {/* Cat */}
             <motion.div
-              className="fixed pointer-events-none z-30"
+              className="fixed pointer-events-none z-[60]"
               animate={catControls}
               initial={{ x: window.innerWidth, y: window.innerHeight }}
               exit={{ opacity: 0 }}
-              style={{ 
+              style={{
                 width: 80,
                 height: 80,
                 originX: 0.5,
@@ -127,12 +149,14 @@ export const LaserPointerCat: React.FC = () => {
                 viewBox="0 0 36 36"
                 className="w-full h-full"
                 animate={isIdle ? {
-                  scale: [1, 1.1, 1],
-                  transition: { 
+                  opacity: [1, 0.5, 1],
+                  y: [0, -4, 0],
+                  transition: {
                     repeat: Infinity,
-                    duration: 2
+                    duration: 3,
+                    ease: 'easeInOut'
                   }
-                } : {}}
+                } : { opacity: 1, y: 0 }}
               >
                 <path fill="#F18F26" d="M10.478 22.439s.702 2.281-.337 7.993c-.186 1.025-.46 2.072-.599 2.93c-1.757 0-1.851 2.002-1.478 2.002h2.094c1.337 0 2.971-3.334 3.854-7.961s-3.534-4.964-3.534-4.964zm13.042 3.702s2.272 1.22 2.188 4.081c-.033 1.131-.249 2.091-.355 3.024c-1.832 0-1.839 1.985-1.305 1.985h1.856c.923 0 3.001-3.158 3.379-7.281c.379-4.122-5.763-1.809-5.763-1.809z"/>
                 <path fill="#FFCC4E" d="M36 8.447C36 3.525 31.859 1 27 1a1 1 0 1 0 0 2c1.804 0 6.717.934 6.717 5.447c0 2.881-1.567 5.462-3.77 5.982c-.164-.073-.345-.104-.509-.192c-7.239-3.917-13.457.902-15.226-.29c-1.752-1.182-.539-3.255-2.824-5.243c-.33-1.841-1.073-4.477-1.794-4.477c-.549 0-1.265 1.825-1.74 3.656c-.591-1.381-1.363-2.756-1.86-2.756c-.64 0-1.278 2.273-1.594 4.235c-1.68 1.147-2.906 2.809-2.906 4.765c0 2.7 4.05 3.357 5.4 3.411c1.35.054 3.023 3.562 3.585 5.072c1.242 4.367 2.051 8.699 2.698 11.183c-1.649 0-1.804 2.111-1.348 2.111c.713 0 1.953-.003 2.225 0c1.381.014 2.026-4.706 2.026-8.849c0-.212-.011-.627-.011-.627s1.93.505 6.038-.208c2.444-.424 5.03.849 5.746 3.163c.527 1.704 1.399 3.305 1.868 4.484c-1.589 0-1.545 2.037-1.084 2.037c.787 0 1.801.014 2.183 0c1.468-.055.643-7.574 1.03-10.097s1.267-5.578-.229-8.797C34.857 15.236 36 11.505 36 8.447z"/>

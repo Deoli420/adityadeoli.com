@@ -15,9 +15,9 @@ interface Bug {
   startTime: number;
 }
 
-const BUG_EMOJIS = ['🐞', '🐜', '🐛', '🕷️', '🪲', '🦗', '🪰', '🐝'];
-const ANIMATION_DURATION = 1400; // ms
-const MAX_BUGS = 50; // Performance cap
+const BUG_EMOJIS = ['🐛', '🐞', '🪲', '🐜'];
+const ANIMATION_DURATION = 2000; // ms
+const MAX_BUGS = 30; // Performance cap
 
 export const MagicalBugSwarm: React.FC = () => {
   const bugsRef = useRef<Bug[]>([]);
@@ -36,7 +36,6 @@ export const MagicalBugSwarm: React.FC = () => {
         current.hasAttribute('onclick') ||
         current.hasAttribute('role') && interactiveRoles.includes(current.getAttribute('role') || '') ||
         current.classList.contains('cursor-pointer') ||
-        current.classList.contains('cursor-[emoji]') ||
         getComputedStyle(current).cursor === 'pointer' ||
         // Prevent interference with game area
         current.id === 'airdrop-game' ||
@@ -64,8 +63,8 @@ export const MagicalBugSwarm: React.FC = () => {
     const startX = centerX + Math.cos(angle) * initialRadius;
     const startY = centerY + Math.sin(angle) * initialRadius;
     
-    // Speed varies for more natural scatter
-    const speed = 4 + Math.random() * 6; // 4-10 speed
+    // Speed varies for more natural scatter — reduced for gentler float
+    const speed = 2.5 + Math.random() * 3.5; // 2.5-6 speed
     const emoji = BUG_EMOJIS[Math.floor(Math.random() * BUG_EMOJIS.length)];
     
     const element = document.createElement('div');
@@ -76,11 +75,9 @@ export const MagicalBugSwarm: React.FC = () => {
       font-size: ${14 + Math.random() * 8}px;
       transform-origin: center;
       z-index: 9998;
-      filter: 
-        drop-shadow(0 0 6px #00fff7) 
-        drop-shadow(0 0 12px #8e44ec) 
-        drop-shadow(0 0 3px #ff2a6d)
-        hue-rotate(${Math.random() * 60 - 30}deg);
+      filter:
+        drop-shadow(0 0 4px #00fff7)
+        drop-shadow(0 0 8px #8e44ec);
       animation: bugSpawn 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     `;
     element.textContent = emoji;
@@ -112,41 +109,27 @@ export const MagicalBugSwarm: React.FC = () => {
     // Physics with natural movement
     bug.x += bug.vx * (1 - progress * 0.2); // Gradual slowdown
     bug.y += bug.vy * (1 - progress * 0.2);
-    bug.vy += 0.12; // Subtle gravity
+    bug.vy += 0.06; // Gentle gravity for floaty feel
     bug.vx *= 0.998; // Very light air resistance
     bug.vy *= 0.998;
     bug.rotation += bug.rotationSpeed * (1 - progress * 0.5);
     
-    // Magical fade and scale
+    // Smooth fade and scale — start fading at 50% progress
     bug.scale = Math.max(0.1, 1 - easeOut * 0.8);
-    bug.opacity = Math.max(0, 1 - Math.pow(progress, 1.2));
-    
-    // Glitch effect near end
-    const glitchOffset = progress > 0.7 ? (Math.random() - 0.5) * 3 : 0;
-    
-    // Apply transforms
+    const fadeProgress = Math.max(0, (progress - 0.5) / 0.5); // 0 until 50%, then ramps to 1
+    bug.opacity = Math.max(0, 1 - fadeProgress);
+
+    // Apply transforms (no glitch jitter)
     bug.element.style.transform = `
-      translate(-50%, -50%) 
-      translate(${bug.x + glitchOffset}px, ${bug.y + glitchOffset}px) 
-      scale(${bug.scale}) 
+      translate(-50%, -50%)
+      translate(${bug.x}px, ${bug.y}px)
+      scale(${bug.scale})
       rotate(${bug.rotation}deg)
     `;
     bug.element.style.opacity = bug.opacity.toString();
     
-    // Enhanced effects as they fade
-    if (progress > 0.5) {
-      const aberration = (progress - 0.5) * 3;
-      const pulse = Math.sin(deltaTime * 0.015) * 0.3;
-      bug.element.style.filter = `
-        drop-shadow(0 0 6px #00fff7) 
-        drop-shadow(0 0 12px #8e44ec) 
-        drop-shadow(${aberration}px 0 #ff2a6d)
-        drop-shadow(-${aberration}px 0 #00fff7)
-        hue-rotate(${Math.sin(deltaTime * 0.008) * 120}deg)
-        brightness(${1 + pulse})
-        saturate(${1.5 + pulse})
-      `;
-    }
+    // Keep consistent clean drop-shadow throughout (no chromatic aberration)
+
     
     return progress < 1;
   };
@@ -178,16 +161,16 @@ export const MagicalBugSwarm: React.FC = () => {
     }
     
     // Clean up old bugs if we're at the limit
-    if (bugsRef.current.length > MAX_BUGS - 12) {
-      const oldBugs = bugsRef.current.splice(0, 10);
+    if (bugsRef.current.length > MAX_BUGS - 8) {
+      const oldBugs = bugsRef.current.splice(0, 8);
       oldBugs.forEach(bug => bug.element.remove());
     }
-    
+
     // Determine bug count (fewer on mobile)
     const isMobile = window.innerWidth < 768;
-    const bugCount = isMobile ? 
-      Math.floor(Math.random() * 3) + 6 : // 6-8 on mobile
-      Math.floor(Math.random() * 5) + 10; // 10-14 on desktop
+    const bugCount = isMobile ?
+      Math.floor(Math.random() * 3) + 4 : // 4-6 on mobile
+      Math.floor(Math.random() * 5) + 6; // 6-10 on desktop
     
     // Create bugs with perfect radial distribution and staggered timing
     for (let i = 0; i < bugCount; i++) {

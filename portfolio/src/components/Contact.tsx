@@ -17,7 +17,7 @@ export const Contact: React.FC = () => {
   const [integrityFeedback, setIntegrityFeedback] = useState<string[]>([]);
   const [integrityStatus, setIntegrityStatus] = useState<'critical' | 'warning' | 'stable'>('critical');
 
-  // Transmission Integrity Analyzer (TIA)
+  // Message Quality Analyzer
   const analyzeTransmissionIntegrity = (name: string, email: string, message: string) => {
     let score = 100;
     const feedback: string[] = [];
@@ -25,10 +25,10 @@ export const Contact: React.FC = () => {
     // Length Analysis
     if (message.length < 20) {
       score -= 40;
-      feedback.push('Data packet too brief - expand transmission content');
+      feedback.push('Message is too short');
     } else if (message.length < 50) {
       score -= 20;
-      feedback.push('Signal strength low - consider adding more context');
+      feedback.push('Consider adding more context');
     }
     
     // Signal Quality Detection
@@ -46,28 +46,28 @@ export const Contact: React.FC = () => {
     
     if (lowSignalPatterns.some(pattern => pattern.test(message.trim()))) {
       score -= 30;
-      feedback.push('Low-entropy signal detected - provide meaningful content');
+      feedback.push('Add more detail');
     }
     
     if (spamPatterns.some(pattern => pattern.test(message))) {
       score -= 25;
-      feedback.push('Transmission pattern flagged - refine message structure');
+      feedback.push('Please refine your message');
     }
     
     // Context Completeness
     if (!name.trim()) {
       score -= 20;
-      feedback.push('Identity vector missing');
+      feedback.push('Please enter your name');
     }
     
     if (!email.trim()) {
       score -= 20;
-      feedback.push('Neural address required for response channel');
+      feedback.push('Email is required');
     }
     
     if (!message.trim()) {
       score -= 30;
-      feedback.push('Data packet empty - transmission impossible');
+      feedback.push('Please enter a message');
     }
     
     // Sentence structure check
@@ -127,7 +127,7 @@ export const Contact: React.FC = () => {
     switch (integrityStatus) {
       case 'critical':
         return {
-          label: 'Unstable Link',
+          label: 'Needs Improvement',
           color: 'text-red-400',
           bgColor: 'bg-red-900/30',
           borderColor: 'border-red-500/50',
@@ -135,7 +135,7 @@ export const Contact: React.FC = () => {
         };
       case 'warning':
         return {
-          label: 'Partial Sync',
+          label: 'Almost There',
           color: 'text-yellow-400',
           bgColor: 'bg-yellow-900/30',
           borderColor: 'border-yellow-500/50',
@@ -143,7 +143,7 @@ export const Contact: React.FC = () => {
         };
       case 'stable':
         return {
-          label: 'Stable Transmission',
+          label: 'Ready to Send',
           color: 'text-green-400',
           bgColor: 'bg-green-900/30',
           borderColor: 'border-green-500/50',
@@ -160,14 +160,14 @@ export const Contact: React.FC = () => {
     
     // Check integrity score
     if (integrityScore < 60) {
-      setErrorMessage('Transmission integrity too low. Improve signal quality before sending.');
+      setErrorMessage('Message quality too low. Please add more detail before sending.');
       setSubmitStatus('error');
       return;
     }
     
     // Validation - check if any field is empty
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
-      setErrorMessage('All neural pathways must be connected. Please fill in all fields.');
+      setErrorMessage('Please fill in all fields.');
       setSubmitStatus('error');
       return;
     }
@@ -176,11 +176,11 @@ export const Contact: React.FC = () => {
     
     try {
       // Generate mailto URL
-      const subject = `New Neural Connection from ${formData.name}`;
-      const body = `Identity: ${formData.name}
-Neural Address: ${formData.email}
+      const subject = `New Message from ${formData.name}`;
+      const body = `Name: ${formData.name}
+Email: ${formData.email}
 
-Data Packet:
+Message:
 ${formData.message}`;
       
       // Encode components for URL
@@ -203,8 +203,8 @@ ${formData.message}`;
       }, 3000);
       
     } catch (error) {
-      console.error('Neural transmission error:', error);
-      setErrorMessage('Neural link disrupted. Please try again.');
+      console.error('Contact form error:', error);
+      setErrorMessage('Something went wrong. Please try again.');
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -223,7 +223,7 @@ ${formData.message}`;
           viewport={{ once: true }}
           className="text-4xl font-bold text-center mb-12 cyber-text animate-flicker"
         >
-          Neural Link Connection
+          Get in Touch
         </motion.h2>
 
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12">
@@ -234,7 +234,7 @@ ${formData.message}`;
             className="space-y-8"
           >
             <h3 className="text-2xl font-bold text-cyber-cyan mb-6">
-              Connect to the Network
+              Have a role in mind? Let's talk.
             </h3>
             
             <div className="space-y-6">
@@ -277,7 +277,7 @@ ${formData.message}`;
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm text-cyber-cyan mb-2">
-                  Your Identity
+                  Name
                 </label>
                 <input
                   type="text"
@@ -291,7 +291,7 @@ ${formData.message}`;
               
               <div>
                 <label htmlFor="email" className="block text-sm text-cyber-cyan mb-2">
-                  Neural Address
+                  Email
                 </label>
                 <input
                   type="email"
@@ -305,7 +305,7 @@ ${formData.message}`;
               
               <div>
                 <label htmlFor="message" className="block text-sm text-cyber-cyan mb-2">
-                  Data Packet
+                  Message
                 </label>
                 <textarea
                   id="message"
@@ -317,11 +317,11 @@ ${formData.message}`;
                 />
               </div>
 
-              {/* Transmission Integrity Analyzer Display */}
+              {/* Message Quality Display */}
               {(formData.name || formData.email || formData.message) && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-cyber-cyan">Transmission Integrity</span>
+                    <span className="text-sm text-cyber-cyan">Message Quality</span>
                     <span className="text-sm font-mono text-gray-400">
                       {integrityScore}/100
                     </span>
@@ -374,10 +374,10 @@ ${formData.message}`;
                 className="w-full px-6 py-3 bg-cyber-violet text-white rounded-md hover:bg-cyber-purple transition-colors cyber-glow flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
-                  'Transmitting...'
+                  'Sending...'
                 ) : (
                   <>
-                    Send Data
+                    Send Message
                     <Scroll className="w-5 h-5 animate-pulse" />
                   </>
                 )}
@@ -391,13 +391,13 @@ ${formData.message}`;
 
               {submitStatus === 'success' && (
                 <p className="text-cyber-cyan text-center">
-                  Neural link established! Check your mail client.
+                  Message sent! Check your mail client.
                 </p>
               )}
               
               {submitStatus === 'error' && !errorMessage && (
                 <p className="text-cyber-pink text-center">
-                  Transmission failed. Please try again.
+                  Failed to send. Please try again.
                 </p>
               )}
             </form>
