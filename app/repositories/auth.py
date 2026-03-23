@@ -107,6 +107,85 @@ class AuthRepository:
 
     # ── Audit Log ───────────────────────────────────────────────────────
 
+    # ── Organization Management ──────────────────────────────────────
+
+    async def create_organization(self, name: str, slug: str) -> Organization:
+        org = Organization(name=name, slug=slug)
+        self._session.add(org)
+        await self._session.flush()
+        return org
+
+    async def get_org_by_id(self, org_id: uuid.UUID) -> Optional[Organization]:
+        result = await self._session.execute(
+            select(Organization).where(Organization.id == org_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def update_org(self, org_id: uuid.UUID, **fields) -> None:
+        await self._session.execute(
+            update(Organization)
+            .where(Organization.id == org_id)
+            .values(**fields)
+        )
+
+    async def check_slug_exists(self, slug: str) -> bool:
+        result = await self._session.execute(
+            select(Organization.id).where(Organization.slug == slug).limit(1)
+        )
+        return result.scalar_one_or_none() is not None
+
+    # ── User Management ──────────────────────────────────────────────
+
+    async def create_user(
+        self,
+        email: str,
+        password_hash: str,
+        display_name: str,
+        role,
+        org_id: uuid.UUID,
+    ) -> User:
+        user = User(
+            email=email,
+            password_hash=password_hash,
+            display_name=display_name,
+            role=role,
+            organization_id=org_id,
+        )
+        self._session.add(user)
+        await self._session.flush()
+        # Re-fetch with organization loaded
+        return await self.get_user_by_id(user.id)  # type: ignore[return-value]
+
+    async def get_users_by_org(self, org_id: uuid.UUID) -> list[User]:
+        result = await self._session.execute(
+            select(User).where(User.organization_id == org_id)
+        )
+        return list(result.scalars().all())
+
+    async def get_user_by_id_and_org(
+        self, user_id: uuid.UUID, org_id: uuid.UUID
+    ) -> Optional[User]:
+        result = await self._session.execute(
+            select(User)
+            .options(joinedload(User.organization))
+            .where(User.id == user_id, User.organization_id == org_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def update_user(self, user_id: uuid.UUID, **fields) -> None:
+        await self._session.execute(
+            update(User).where(User.id == user_id).values(**fields)
+        )
+
+    async def increment_token_version(self, user_id: uuid.UUID) -> None:
+        await self._session.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(token_version=User.token_version + 1)
+        )
+
+    # ── Audit Log ───────────────────────────────────────────────────
+
     async def create_audit_log(
         self,
         action: str,

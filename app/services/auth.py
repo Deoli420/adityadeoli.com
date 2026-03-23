@@ -1,4 +1,6 @@
 import hashlib
+import re
+import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -7,13 +9,19 @@ from fastapi import HTTPException, status
 from jose import JWTError, jwt
 
 from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.repositories.auth import AuthRepository
+from app.repositories.invite import InviteRepository
 
 
 class AuthService:
-    def __init__(self, repo: AuthRepository) -> None:
+    def __init__(
+        self,
+        repo: AuthRepository,
+        invite_repo: InviteRepository | None = None,
+    ) -> None:
         self._repo = repo
+        self._invite_repo = invite_repo
 
     # ── Password Hashing ────────────────────────────────────────────────
 
@@ -252,6 +260,132 @@ class AuthService:
             ip_address=ip_address,
             user_agent=user_agent,
         )
+
+    # ── Signup ───────────────────────────────────────────────────────
+
+    async def signup(
+        self,
+        display_name: str,
+        email: str,
+        password: str,
+        org_name: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[str, str, User]:
+        """
+        Create a new organization and owner user.
+        Returns (access_token, raw_refresh_token, user).
+        """
+        org_name = org_name or f"{display_name}'s Organization"
+        slug = re.sub(r"[^a-z0-9]+", "-", org_name.lower()).strip("-")[:50]
+
+        if await self._repo.check_slug_exists(slug):
+            slug = f"{slug}-{secrets.token_hex(3)}"
+
+        org = await self._repo.create_organization(name=org_name, slug=slug)
+
+        password_hash = self.hash_password(password)
+        user = await self._repo.create_user(
+            email=email,
+            password_hash=password_hash,
+            display_name=display_name,
+            role=UserRole.OWNER,
+            org_id=org.id,
+        )
+
+        access_token = self.create_access_token(user)
+        raw_refresh = str(uuid.uuid4())
+        token_hash = self._hash_token(raw_refresh)
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
+        await self._repo.create_refresh_token(user.id, token_hash, expires_at)
+
+        await self._repo.create_audit_log(
+            "SIGNUP",
+            organization_id=org.id,
+            user_id=user.id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+        return access_token, raw_refresh, user
+
+    # ── Join via Invite ──────────────────────────────────────────────
+
+    async def join_via_invite(
+        self,
+        token: str,
+        display_name: str,
+        password: str,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[str, str, User]:
+        """
+        Join an organization via invite token.
+        Returns (access_token, raw_refresh_token, user).
+        """
+        if not self._invite_repo:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invite repository not configured",
+            )
+
+        invite = await self._invite_repo.get_by_token(token)
+        if not invite:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invalid invite token",
+            )
+        if invite.used_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invite has already been used",
+            )
+        if invite.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invite has expired",
+            )
+
+        # Check email not already in org
+        existing = await self._repo.get_user_by_email_and_org(
+            invite.email, invite.organization_id
+        )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this email already exists in the organization",
+            )
+
+        password_hash = self.hash_password(password)
+        user = await self._repo.create_user(
+            email=invite.email,
+            password_hash=password_hash,
+            display_name=display_name,
+            role=invite.role,
+            org_id=invite.organization_id,
+        )
+
+        await self._invite_repo.mark_used(invite.id)
+
+        access_token = self.create_access_token(user)
+        raw_refresh = str(uuid.uuid4())
+        token_hash_val = self._hash_token(raw_refresh)
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
+        await self._repo.create_refresh_token(user.id, token_hash_val, expires_at)
+
+        await self._repo.create_audit_log(
+            "USER_JOINED",
+            organization_id=invite.organization_id,
+            user_id=user.id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+        return access_token, raw_refresh, user
 
     # ── Verify Access Token (for middleware) ────────────────────────────
 

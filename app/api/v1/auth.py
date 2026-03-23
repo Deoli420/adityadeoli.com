@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Cookie, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,7 +8,10 @@ from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.db.session import get_session
 from app.repositories.auth import AuthRepository
+from app.repositories.invite import InviteRepository
 from app.schemas.auth import LoginRequest, TokenResponse, UserRead
+from app.schemas.invite import ValidateInviteResponse
+from app.schemas.user_management import JoinRequest, SignupRequest
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -16,7 +21,7 @@ REFRESH_COOKIE_PATH = "/api/v1/auth"
 
 
 def _get_service(session: AsyncSession = Depends(get_session)) -> AuthService:
-    return AuthService(AuthRepository(session))
+    return AuthService(AuthRepository(session), InviteRepository(session))
 
 
 def _set_refresh_cookie(response: Response, raw_token: str) -> None:
@@ -141,3 +146,93 @@ async def logout(
 async def me(user: CurrentUser):
     """Return the currently authenticated user."""
     return UserRead.model_validate(user)
+
+
+@router.post("/signup", response_model=TokenResponse)
+@limiter.limit("3/minute")
+async def signup(
+    request: Request,
+    body: SignupRequest,
+    response: Response,
+    service: AuthService = Depends(_get_service),
+):
+    """
+    Create a new organization and owner account.
+
+    Returns access_token in JSON and refresh_token as httpOnly cookie.
+    """
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent")
+
+    access_token, raw_refresh, user = await service.signup(
+        display_name=body.display_name,
+        email=body.email,
+        password=body.password,
+        org_name=body.org_name,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
+    _set_refresh_cookie(response, raw_refresh)
+
+    return TokenResponse(
+        access_token=access_token,
+        user=UserRead.model_validate(user),
+    )
+
+
+@router.post("/join/{token}", response_model=TokenResponse)
+@limiter.limit("5/minute")
+async def join_via_invite(
+    request: Request,
+    token: str,
+    body: JoinRequest,
+    response: Response,
+    service: AuthService = Depends(_get_service),
+):
+    """
+    Join an organization via invite token.
+
+    Returns access_token in JSON and refresh_token as httpOnly cookie.
+    """
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent")
+
+    access_token, raw_refresh, user = await service.join_via_invite(
+        token=token,
+        display_name=body.display_name,
+        password=body.password,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
+    _set_refresh_cookie(response, raw_refresh)
+
+    return TokenResponse(
+        access_token=access_token,
+        user=UserRead.model_validate(user),
+    )
+
+
+@router.get("/invites/{token}/validate", response_model=ValidateInviteResponse)
+async def validate_invite(
+    token: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Validate an invite token and return its details (public endpoint)."""
+    invite_repo = InviteRepository(session)
+    invite = await invite_repo.get_by_token(token)
+
+    if not invite or invite.used_at is not None:
+        return ValidateInviteResponse(valid=False)
+
+    if invite.expires_at < datetime.now(timezone.utc):
+        return ValidateInviteResponse(valid=False)
+
+    return ValidateInviteResponse(
+        valid=True,
+        email=invite.email,
+        org_name=invite.organization.name if invite.organization else None,
+        role=invite.role.value,
+        expires_at=invite.expires_at.isoformat(),
+    )
