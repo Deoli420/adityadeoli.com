@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Heart, Server, Webhook, Code2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import clsx from "clsx";
 import { uid } from "@/utils/endpointForm.ts";
 import type { AuthConfig, BodyConfig, KeyValuePair } from "@/types/apiTester.ts";
 
@@ -65,9 +66,11 @@ const TEMPLATES: EndpointTemplate[] = [
 
 interface Props {
   onApply: (template: EndpointTemplate) => void;
+  onReset: () => void;
+  activeTemplateId?: string | null;
 }
 
-export function TemplateSelector({ onApply }: Props) {
+export function TemplateSelector({ onApply, onReset, activeTemplateId }: Props) {
   const [visible, setVisible] = useState(true);
 
   return (
@@ -76,15 +79,29 @@ export function TemplateSelector({ onApply }: Props) {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-text-secondary">Start from a template</p>
-              <button type="button" onClick={() => setVisible(false)} className="text-text-tertiary hover:text-text-secondary">
-                <X className="h-3.5 w-3.5" />
-              </button>
+              <p className="text-xs font-medium text-text-secondary">
+                {activeTemplateId ? "Template applied — pick another or start fresh" : "Start from a template"}
+              </p>
+              <div className="flex items-center gap-2">
+                {activeTemplateId && (
+                  <button type="button" onClick={onReset} className="text-[10px] font-medium text-risk-critical hover:underline">
+                    Reset form
+                  </button>
+                )}
+                <button type="button" onClick={() => setVisible(false)} className="text-text-tertiary hover:text-text-secondary">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {TEMPLATES.map(t => (
-                <button key={t.id} type="button" onClick={() => { onApply(t); setVisible(false); }}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 text-left transition-all hover:border-accent/30 hover:bg-accent-light/30"
+                <button key={t.id} type="button" onClick={() => onApply(t)}
+                  className={clsx(
+                    "flex items-center gap-3 rounded-lg border p-3 text-left transition-all",
+                    activeTemplateId === t.id
+                      ? "border-accent bg-accent-light/50 ring-1 ring-accent/20"
+                      : "border-border bg-surface hover:border-accent/30 hover:bg-accent-light/30",
+                  )}
                 >
                   <t.icon className="h-4 w-4 text-accent shrink-0" />
                   <div>

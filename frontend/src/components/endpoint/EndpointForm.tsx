@@ -156,6 +156,14 @@ export function EndpointForm({
   const [testSending, setTestSending] = useState(false);
   const [showTestResult, setShowTestResult] = useState(false);
   const [hasTestedOk, setHasTestedOk] = useState(false);
+  const [testedUrl, setTestedUrl] = useState<string | null>(null);
+
+  // Template tracking
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+
+  // Draft restore undo — stores form state before restore so user can undo
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [preRestoreSnapshot, setPreRestoreSnapshot] = useState<any>(null);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -181,6 +189,8 @@ export function EndpointForm({
 
   const hasBasicInfo = Boolean(form.name.trim() && form.url.trim() && isValidUrl(form.url));
   const hasConfig = auth.type !== "none" || kvCount(headers) > 0 || body.type !== "none" || kvCount(params) > 0;
+  // Reset "tested" status if URL changed since last test
+  const isStillTestedUrl = hasTestedOk && testedUrl === form.url;
 
   // ── Draft saving ──────────────────────────────────────────────────────
 
@@ -196,6 +206,8 @@ export function EndpointForm({
   const draft = useFormDraft(draftKey, draftSnapshot);
 
   function handleRestoreDraft() {
+    // Save current state so user can undo the restore
+    setPreRestoreSnapshot({ form, params, headers, cookies, auth, body, advanced, expectedSchema, validateSchema });
     const restored = draft.restoreDraft();
     if (restored) {
       setForm(restored.form);
@@ -207,8 +219,23 @@ export function EndpointForm({
       setAdvanced(restored.advanced);
       if (restored.expectedSchema) setExpectedSchema(restored.expectedSchema);
       if (restored.validateSchema !== undefined) setValidateSchema(restored.validateSchema);
-      toast.success("Draft restored");
+      toast.success("Draft restored — you can undo this below");
     }
+  }
+
+  function handleUndoRestore() {
+    if (!preRestoreSnapshot) return;
+    setForm(preRestoreSnapshot.form);
+    setParams(preRestoreSnapshot.params);
+    setHeaders(preRestoreSnapshot.headers);
+    setCookies(preRestoreSnapshot.cookies);
+    setAuth(preRestoreSnapshot.auth);
+    setBody(preRestoreSnapshot.body);
+    setAdvanced(preRestoreSnapshot.advanced);
+    setExpectedSchema(preRestoreSnapshot.expectedSchema);
+    setValidateSchema(preRestoreSnapshot.validateSchema);
+    setPreRestoreSnapshot(null);
+    toast.success("Restore undone");
   }
 
   // ── Edit mode hydration ─────────────────────────────────────────────
@@ -320,6 +347,7 @@ export function EndpointForm({
     if (v.headers) setHeaders(v.headers);
     if (v.auth) setAuth(a => ({ ...a, ...v.auth } as AuthConfig));
     if (v.body) setBody(b => ({ ...b, ...v.body } as BodyConfig));
+    setActiveTemplateId(template.id);
 
     // Check if interval matches preset
     if (v.monitoring_interval_seconds && !INTERVAL_PRESETS.some(p => p.value === v.monitoring_interval_seconds)) {
@@ -328,7 +356,33 @@ export function EndpointForm({
       setCustomInterval(false);
     }
 
+    // Reset test state since form changed
+    setHasTestedOk(false);
+    setTestedUrl(null);
+
     toast.success(`${template.label} template applied`);
+  }
+
+  /** Reset form to blank state */
+  function handleResetForm() {
+    setForm({ name: "", url: "", method: "GET", expected_status: 200, monitoring_interval_seconds: 300 });
+    setParams([emptyKV()]);
+    setHeaders([emptyKV()]);
+    setCookies([emptyKV()]);
+    setAuth(defaultAuth());
+    setBody(defaultBody());
+    setAdvanced(defaultAdvanced());
+    setExpectedSchema(null);
+    setValidateSchema(true);
+    setCustomInterval(false);
+    setActiveTemplateId(null);
+    setHasTestedOk(false);
+    setTestedUrl(null);
+    setTestResponse(null);
+    setShowTestResult(false);
+    setTouched({});
+    setError(null);
+    toast.success("Form reset");
   }
 
   /** Build a RequestConfig for test execution */
@@ -357,6 +411,7 @@ export function EndpointForm({
       setTestResponse(result);
       if (result.status >= 200 && result.status < 500 && !result.error) {
         setHasTestedOk(true);
+        setTestedUrl(form.url);
       }
     } catch (err) {
       setTestResponse({
@@ -467,7 +522,7 @@ export function EndpointForm({
         </div>
 
         {/* Completion Indicator */}
-        <CompletionIndicator hasBasicInfo={hasBasicInfo} hasConfig={hasConfig} hasTested={hasTestedOk} />
+        <CompletionIndicator hasBasicInfo={hasBasicInfo} hasConfig={hasConfig} hasTested={isStillTestedUrl} />
 
         {/* Mode Toggle (Segmented Control) */}
         <div className="mt-3 mb-5">
@@ -514,6 +569,16 @@ export function EndpointForm({
           </div>
         )}
 
+        {/* Undo restore banner */}
+        {preRestoreSnapshot && (
+          <div className="flex items-center gap-3 rounded-lg border border-risk-medium/20 bg-risk-medium-bg px-4 py-3 mb-4">
+            <RotateCcw className="h-4 w-4 text-risk-medium shrink-0" />
+            <p className="text-xs text-text-secondary flex-1">Draft restored.</p>
+            <button type="button" onClick={handleUndoRestore} className="text-xs font-medium text-risk-medium hover:underline">Undo</button>
+            <button type="button" onClick={() => setPreRestoreSnapshot(null)} className="text-xs text-text-tertiary hover:text-text-secondary">Dismiss</button>
+          </div>
+        )}
+
         {/* First endpoint onboarding hint */}
         {isFirstEndpoint && mode === "create" && (
           <div className="flex items-center gap-3 rounded-lg border border-accent/20 bg-accent-light/50 px-4 py-3 mb-4">
@@ -524,7 +589,7 @@ export function EndpointForm({
 
         {/* Template Selector (create mode only) */}
         {mode === "create" && (
-          <TemplateSelector onApply={handleApplyTemplate} />
+          <TemplateSelector onApply={handleApplyTemplate} onReset={handleResetForm} activeTemplateId={activeTemplateId} />
         )}
 
         {/* cURL Input Area */}
@@ -857,9 +922,10 @@ export function EndpointForm({
                 updateField("expected_status", status);
                 toast.success("Expected status updated");
               }}
+              hasExistingSchema={!!expectedSchema}
               onCaptureSchema={(schema) => {
                 setExpectedSchema(schema);
-                toast.success("Response schema captured");
+                toast.success(expectedSchema ? "Schema re-captured from latest response" : "Response schema captured");
               }}
             />
           )}
@@ -872,7 +938,14 @@ export function EndpointForm({
             </div>
           )}
 
-          {/* Submit */}
+          {/* Reset + Submit */}
+          {mode === "create" && (form.name || form.url !== "") && (
+            <div className="flex justify-end">
+              <button type="button" onClick={handleResetForm} className="text-[10px] text-text-tertiary hover:text-risk-critical transition-colors">
+                Reset form
+              </button>
+            </div>
+          )}
           <button
             type="submit"
             disabled={isSubmitting}

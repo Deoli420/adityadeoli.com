@@ -17,6 +17,7 @@ interface TestResultPanelProps {
   onClose: () => void;
   onApplyStatus?: (status: number) => void;
   onCaptureSchema?: (schema: Record<string, unknown>) => void;
+  hasExistingSchema?: boolean;
 }
 
 export function TestResultPanel({
@@ -25,6 +26,7 @@ export function TestResultPanel({
   onClose,
   onApplyStatus,
   onCaptureSchema,
+  hasExistingSchema,
 }: TestResultPanelProps) {
   const [responseTab, setResponseTab] = useState<"body" | "headers">("body");
   const [copied, setCopied] = useState(false);
@@ -221,7 +223,7 @@ export function TestResultPanel({
               try { onCaptureSchema(inferJsonSchema(JSON.parse(response.body))); } catch { /* not valid JSON */ }
             }}
               className="text-[10px] font-medium text-accent hover:underline">
-              Capture schema
+              {hasExistingSchema ? "Re-capture schema" : "Capture schema"}
             </button>
           )}
         </div>
