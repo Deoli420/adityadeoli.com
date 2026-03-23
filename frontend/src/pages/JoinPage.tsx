@@ -55,8 +55,12 @@ export function JoinPage() {
     e.preventDefault();
     setError(null);
 
-    if (!displayName.trim() || !password.trim()) {
+    if (!displayName.trim() || !password) {
       setError("Display name and password are required.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
@@ -68,11 +72,17 @@ export function JoinPage() {
       });
       setAuth(res.user, res.access_token);
       navigate("/", { replace: true });
-    } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Failed to join. Please try again.";
+    } catch (err: unknown) {
+      let msg = "Failed to join. Please try again.";
+      const axErr = err as { response?: { data?: { detail?: unknown } } };
+      const detail = axErr?.response?.data?.detail;
+      if (typeof detail === "string") {
+        msg = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        msg = detail.map((d: { msg?: string }) => d.msg ?? "").filter(Boolean).join(". ");
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
       toast.error(msg);
     } finally {
@@ -198,7 +208,11 @@ export function JoinPage() {
                 className="input"
                 placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"}
                 autoComplete="new-password"
+                minLength={8}
               />
+              <p className="mt-1 text-[11px] text-text-tertiary">
+                Minimum 8 characters
+              </p>
             </div>
 
             {/* Submit */}
