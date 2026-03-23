@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getInvites, createInvite, revokeInvite } from "@/services/userService.ts";
 import toast from "react-hot-toast";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 export function useInvites() {
   return useQuery({ queryKey: ["invites"], queryFn: getInvites });
@@ -11,7 +12,7 @@ export function useCreateInvite() {
   return useMutation({
     mutationFn: createInvite,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["invites"] }); },
-    onError: () => toast.error("Failed to create invite"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to create invite")),
   });
 }
 
@@ -20,6 +21,6 @@ export function useRevokeInvite() {
   return useMutation({
     mutationFn: revokeInvite,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["invites"] }); toast.success("Invite revoked"); },
-    onError: () => toast.error("Failed to revoke invite"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to revoke invite")),
   });
 }

@@ -4,6 +4,7 @@ import {
   triggerDebugAnalysis,
   getLatestDebugSuggestion,
 } from "@/services/endpointsService.ts";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 export function useLatestDebugSuggestion(endpointId: string) {
   return useQuery({
@@ -21,8 +22,8 @@ export function useTriggerDebug(endpointId: string) {
       qc.invalidateQueries({ queryKey: ["debug-suggestion", endpointId] });
       toast.success("Debug analysis complete");
     },
-    onError: (err: Error) => {
-      const msg = err.message || "Debug analysis failed";
+    onError: (err: unknown) => {
+      const msg = extractApiError(err, "Debug analysis failed");
       toast.error(msg.includes("503") ? "AI not available" : msg);
     },
   });

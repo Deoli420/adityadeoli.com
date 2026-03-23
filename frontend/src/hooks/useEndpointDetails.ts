@@ -10,6 +10,7 @@ import {
 import type { MonitorRunResult } from "@/types/index.ts";
 import { useWsStore } from "@/stores/wsStore.ts";
 import toast from "react-hot-toast";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 /** Non-reactive read: returns polling interval based on WS connection state */
 const wsInterval = (fast: number, slow: number) => () =>
@@ -106,10 +107,9 @@ export function useTriggerMonitorRun(endpointId: string) {
       }
     },
     onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Monitor run failed",
-        { duration: 4000 },
-      );
+      toast.error(extractApiError(error, "Monitor run failed"), {
+        duration: 4000,
+      });
     },
   });
 }

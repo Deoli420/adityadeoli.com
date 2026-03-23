@@ -56,6 +56,7 @@ import { useFormDraft } from "@/hooks/useFormDraft.ts";
 import { useEndpoints } from "@/hooks/useEndpoints.ts";
 import toast from "react-hot-toast";
 import clsx from "clsx";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -328,8 +329,7 @@ export function EndpointForm({
       setCurlParsed(true);
       toast.success("cURL parsed \u2014 review the fields below");
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to parse cURL command";
+      const msg = extractApiError(err, "Failed to parse cURL command");
       setCurlError(msg);
       setCurlParsed(false);
     }
@@ -461,8 +461,7 @@ export function EndpointForm({
       await onSubmit(payload);
       draft.clearDraft();
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : `Failed to ${mode} endpoint.`;
+      const msg = extractApiError(err, `Failed to ${mode} endpoint.`);
       setError(msg);
       toast.error(msg);
     }

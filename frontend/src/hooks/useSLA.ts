@@ -8,6 +8,7 @@ import {
 } from "@/services/endpointsService.ts";
 import type { EndpointSLACreate, EndpointSLAUpdate } from "@/types/index.ts";
 import toast from "react-hot-toast";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 /** SLA config for a single endpoint */
 export function useEndpointSLA(endpointId: string) {
@@ -42,7 +43,7 @@ export function useCreateSLA() {
       toast.success("SLA target configured");
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to create SLA");
+      toast.error(extractApiError(err, "Failed to create SLA"));
     },
   });
 }
@@ -60,7 +61,7 @@ export function useUpdateSLA(endpointId: string) {
       toast.success("SLA target updated");
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to update SLA");
+      toast.error(extractApiError(err, "Failed to update SLA"));
     },
   });
 }
@@ -77,7 +78,7 @@ export function useDeleteSLA(endpointId: string) {
       toast.success("SLA config removed");
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to delete SLA");
+      toast.error(extractApiError(err, "Failed to delete SLA"));
     },
   });
 }

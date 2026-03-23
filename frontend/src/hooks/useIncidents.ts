@@ -14,6 +14,7 @@ import type {
   IncidentStatusUpdate,
   IncidentNoteCreate,
 } from "@/types/index.ts";
+import { extractApiError } from "@/utils/extractApiError.ts";
 import { useWsStore } from "@/stores/wsStore.ts";
 
 const wsInterval = (fast: number, slow: number) => () =>
@@ -66,7 +67,7 @@ export function useCreateIncident() {
       qc.invalidateQueries({ queryKey: ["incidents"] });
       toast.success("Incident created");
     },
-    onError: () => toast.error("Failed to create incident"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to create incident")),
   });
 }
 
@@ -80,7 +81,7 @@ export function useUpdateIncidentStatus(id: string) {
       qc.invalidateQueries({ queryKey: ["incident-timeline", id] });
       toast.success("Status updated");
     },
-    onError: () => toast.error("Failed to update status"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to update status")),
   });
 }
 
@@ -93,6 +94,6 @@ export function useAddIncidentNote(id: string) {
       qc.invalidateQueries({ queryKey: ["incident-timeline", id] });
       toast.success("Note added");
     },
-    onError: () => toast.error("Failed to add note"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to add note")),
   });
 }

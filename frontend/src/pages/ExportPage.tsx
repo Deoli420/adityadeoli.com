@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import toast from "react-hot-toast";
+import { extractApiError } from "@/utils/extractApiError.ts";
 import { useEndpoints } from "@/hooks/useEndpoints.ts";
 import {
   exportRuns,
@@ -134,9 +135,7 @@ export function ExportPage() {
       setLastExport(activeType.id);
       toast.success(`${activeType.label} exported successfully`);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Export failed",
-      );
+      toast.error(extractApiError(err, "Export failed"));
     } finally {
       setLoading(null);
     }

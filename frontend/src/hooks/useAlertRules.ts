@@ -8,6 +8,7 @@ import {
   toggleAlertRule,
 } from "@/services/endpointsService.ts";
 import type { AlertRuleCreate, AlertRuleUpdate } from "@/types/index.ts";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 const STALE = 30_000;
 
@@ -28,7 +29,7 @@ export function useCreateAlertRule(endpointId: string) {
       qc.invalidateQueries({ queryKey: ["alert-rules", endpointId] });
       toast.success("Alert rule created");
     },
-    onError: () => toast.error("Failed to create alert rule"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to create alert rule")),
   });
 }
 
@@ -41,7 +42,7 @@ export function useUpdateAlertRule(endpointId: string) {
       qc.invalidateQueries({ queryKey: ["alert-rules", endpointId] });
       toast.success("Alert rule updated");
     },
-    onError: () => toast.error("Failed to update alert rule"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to update alert rule")),
   });
 }
 
@@ -53,7 +54,7 @@ export function useDeleteAlertRule(endpointId: string) {
       qc.invalidateQueries({ queryKey: ["alert-rules", endpointId] });
       toast.success("Alert rule deleted");
     },
-    onError: () => toast.error("Failed to delete alert rule"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to delete alert rule")),
   });
 }
 
@@ -64,6 +65,6 @@ export function useToggleAlertRule(endpointId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["alert-rules", endpointId] });
     },
-    onError: () => toast.error("Failed to toggle alert rule"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to toggle alert rule")),
   });
 }

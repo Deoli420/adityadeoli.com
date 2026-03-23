@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   getEndpoints,
   createEndpoint,
@@ -8,6 +9,7 @@ import {
 } from "@/services/endpointsService.ts";
 import type { ApiEndpointCreate, ApiEndpointUpdate } from "@/types/index.ts";
 import { useWsStore } from "@/stores/wsStore.ts";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 const wsInterval = (fast: number, slow: number) => () =>
   useWsStore.getState().connected ? slow : fast;
@@ -32,6 +34,7 @@ export function useCreateEndpoint() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ENDPOINTS_KEY });
     },
+    onError: (err) => toast.error(extractApiError(err, "Failed to create endpoint")),
   });
 }
 
@@ -44,6 +47,7 @@ export function useUpdateEndpoint() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ENDPOINTS_KEY });
     },
+    onError: (err) => toast.error(extractApiError(err, "Failed to update endpoint")),
   });
 }
 
@@ -65,5 +69,6 @@ export function useDeleteEndpoint() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ENDPOINTS_KEY });
     },
+    onError: (err) => toast.error(extractApiError(err, "Failed to delete endpoint")),
   });
 }

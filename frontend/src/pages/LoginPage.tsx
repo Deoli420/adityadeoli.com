@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { authService } from "@/services/authService.ts";
 import { useAuthStore } from "@/stores/authStore.ts";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 /**
  * Full-screen login page — clean, centered, no sidebar.
@@ -39,8 +40,7 @@ export function LoginPage() {
       setAuth(res.user, res.access_token);
       navigate("/", { replace: true });
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Login failed. Please try again.";
+      const msg = extractApiError(err, "Login failed. Please try again.");
       setError(msg);
     } finally {
       setLoading(false);

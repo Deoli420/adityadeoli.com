@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { joinInvite, validateInvite } from "@/services/userService.ts";
 import { useAuthStore } from "@/stores/authStore.ts";
+import { extractApiError } from "@/utils/extractApiError.ts";
 
 interface InviteInfo {
   email: string;
@@ -73,16 +74,7 @@ export function JoinPage() {
       setAuth(res.user, res.access_token);
       navigate("/", { replace: true });
     } catch (err: unknown) {
-      let msg = "Failed to join. Please try again.";
-      const axErr = err as { response?: { data?: { detail?: unknown } } };
-      const detail = axErr?.response?.data?.detail;
-      if (typeof detail === "string") {
-        msg = detail;
-      } else if (Array.isArray(detail) && detail.length > 0) {
-        msg = detail.map((d: { msg?: string }) => d.msg ?? "").filter(Boolean).join(". ");
-      } else if (err instanceof Error) {
-        msg = err.message;
-      }
+      const msg = extractApiError(err, "Failed to join. Please try again.");
       setError(msg);
       toast.error(msg);
     } finally {
