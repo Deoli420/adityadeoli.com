@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SpiralAnimation } from './components/ui/spiral-animation';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Hero } from './components/Hero';
 import { ImpactStrip } from './components/ImpactStrip';
@@ -61,8 +62,76 @@ function App() {
 
   const MainContent = () => {
     useScrollHaptics(['impact', 'cta']);
+
+    const [showIntro, setShowIntro] = useState(true);
+    const [introFading, setIntroFading] = useState(false);
+    const [enterVisible, setEnterVisible] = useState(false);
+
+    // Show "Enter" button after 2s
+    useEffect(() => {
+      const timer = setTimeout(() => setEnterVisible(true), 2000);
+      return () => clearTimeout(timer);
+    }, []);
+
+    const handleEnter = useCallback(() => {
+      setIntroFading(true);
+      setTimeout(() => setShowIntro(false), 1200);
+    }, []);
+
+    // Also allow Enter key or scroll to dismiss
+    useEffect(() => {
+      if (!showIntro || introFading) return;
+      const handleKey = (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') handleEnter();
+      };
+      const handleScroll = () => {
+        if (enterVisible) handleEnter();
+      };
+      window.addEventListener('keydown', handleKey);
+      window.addEventListener('wheel', handleScroll, { passive: true });
+      window.addEventListener('touchmove', handleScroll, { passive: true });
+      return () => {
+        window.removeEventListener('keydown', handleKey);
+        window.removeEventListener('wheel', handleScroll);
+        window.removeEventListener('touchmove', handleScroll);
+      };
+    }, [showIntro, introFading, enterVisible, handleEnter]);
+
     return (
     <>
+      {/* ── Spiral Intro ──────────────────────────────────── */}
+      {showIntro && (
+        <div
+          className={`fixed inset-0 z-[100] bg-black transition-opacity duration-1000 ${
+            introFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          <div className="absolute inset-0">
+            <SpiralAnimation />
+          </div>
+
+          {/* Enter button */}
+          <div
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-6 transition-all duration-1000 ease-out ${
+              enterVisible && !introFading
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-4'
+            }`}
+          >
+            <button
+              onClick={handleEnter}
+              className="text-white text-2xl tracking-[0.2em] uppercase font-extralight transition-all duration-700 hover:tracking-[0.3em] animate-pulse cursor-pointer"
+            >
+              Enter
+            </button>
+            <span className="text-white/30 text-[10px] tracking-widest uppercase font-mono">
+              or press Enter / scroll
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Main Portfolio ────────────────────────────────── */}
       <div className="fixed inset-0 bg-[url('https://images.pexels.com/photos/8721318/pexels-photo-8721318.jpeg')] bg-cover bg-center opacity-20 pointer-events-none" />
       <div className="relative z-10">
         <ThemeToggle isDark={isDark} toggle={() => setIsDark(!isDark)} />
