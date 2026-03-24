@@ -1,6 +1,6 @@
 # SentinelAI — Product Document
 
-**Version**: 1.0 &middot; **Last Updated**: March 2026 &middot; **Status**: Production
+**Version**: 2.0 &middot; **Last Updated**: March 2026 &middot; **Status**: Production
 
 ---
 
@@ -331,10 +331,20 @@ A GitHub Actions workflow template is included at `cli/github-actions/sentinel-m
 - Brute-force protection: account lockout after 5 failed attempts for 15 minutes
 - Rate limiting: 5 login attempts/min, 10 token refreshes/min
 
-### Authorization
-- Three roles: **ADMIN** (full access), **MEMBER** (create/edit), **VIEWER** (read-only)
-- Role-based access control on all mutating endpoints
-- Same email allowed across different organizations
+### Self-Service Signup & Invites
+- Public signup creates an org + OWNER user in one step (auto-generates org slug)
+- Invite flow: admin creates invite → copies link → invitee joins via `/join/:token`
+- Invite tokens: 256-bit entropy, single-use, 7-day expiry
+- No email delivery required — copy-link pattern (email integration planned)
+
+### Authorization (RBAC)
+- Four roles: **OWNER** (org creator, cannot be removed), **ADMIN** (full management), **MEMBER** (operational access), **VIEWER** (read-only)
+- `RequireWrite` dependency applied to all POST/PATCH/DELETE routes (endpoints, incidents, alert rules, SLA, contracts, debug, monitor, schema)
+- `RequireAdmin` dependency on user management, org settings, invites, alerts config, scheduler
+- `RequireOwner` dependency on ownership transfer
+- Frontend permission-aware UI: write actions hidden for VIEWER, admin features hidden for MEMBER/VIEWER
+- OWNER protection: cannot be removed, role cannot be changed (only transferred)
+- Self-modification prevention: cannot change own role or remove self
 
 ### Tenant Isolation
 - Every database query is scoped to the authenticated user's organization
@@ -354,7 +364,7 @@ A GitHub Actions workflow template is included at `cli/github-actions/sentinel-m
 
 ## 5. Database Schema
 
-15 tables across 10 Alembic migrations:
+16 tables across 11 Alembic migrations:
 
 | Table | Purpose | Key Relationships |
 |-------|---------|------------------|
@@ -372,18 +382,22 @@ A GitHub Actions workflow template is included at `cli/github-actions/sentinel-m
 | security_findings | Credential leaks | → api_run, endpoint |
 | ai_telemetry | LLM cost tracking | → endpoint |
 | audit_logs | Activity audit | → org, user |
+| invites | Team invite tokens | → organization, user (invited_by) |
 | refresh_tokens | Token management | → user |
 
 ---
 
 ## 6. API Reference
 
-70+ RESTful endpoints organized into 15 modules:
+85+ RESTful endpoints organized into 21 modules:
 
 | Module | Routes | Description |
 |--------|--------|-------------|
 | Health | 2 | Liveness + detailed subsystem health |
-| Auth | 4 | Login, refresh, logout, profile |
+| Auth | 6 | Login, signup, join (invite), refresh, logout, invite validation |
+| Users | 6 | Profile (view, update, password change), list members, change role, remove user |
+| Invites | 3 | Create, list pending, revoke invites (ADMIN+) |
+| Organization | 3 | View, update settings, transfer ownership (OWNER) |
 | Endpoints | 5 | CRUD for monitored API endpoints |
 | Monitor | 2 | Trigger runs, get performance stats |
 | Runs | 4 | Run history and failure rates |
@@ -392,17 +406,18 @@ A GitHub Actions workflow template is included at `cli/github-actions/sentinel-m
 | Alert Rules | 6 | CRUD + toggle for alert rules |
 | SLA | 5 | SLA config and uptime tracking |
 | Incidents | 8 | Incident lifecycle management |
-| Dashboard | 5 | Aggregate KPIs and chart data |
+| Dashboard | 6 | Aggregate KPIs, chart data, feature summary |
 | Export | 4 | Streaming CSV downloads |
 | Security | 3 | Credential leak findings and stats |
 | Contracts | 3 | OpenAPI spec upload and validation |
-| AI Telemetry | 2 | LLM usage and cost tracking |
-| Debug | 1 | AI debugging suggestions |
-| Schema | 2 | Schema snapshots and diffs |
+| AI Telemetry | 4 | LLM usage, cost tracking, health |
+| Debug | 2 | AI debugging suggestions |
+| Schema | 3 | Schema snapshots, diffs, accept |
 | CI | 1 | CI/CD pipeline integration |
 | WebSocket | 1 | Real-time event stream |
 | Scheduler | 2 | Job sync and status |
 | Proxy | 1 | API request proxy/tester |
+| Onboarding | 1 | Checklist status |
 
 Full interactive documentation available at `/docs` (Swagger UI).
 
@@ -414,26 +429,42 @@ Full interactive documentation available at `/docs` (Swagger UI).
 
 | Page | Path | Description |
 |------|------|-------------|
-| Login | `/login` | Email + org slug authentication |
-| Dashboard | `/` | KPI cards, response trends, risk distribution, uptime overview, top failures, onboarding checklist |
+| Login | `/login` | Email + org slug authentication, "Create account" link |
+| Signup | `/signup` | Self-service registration: name, email, password, org name |
+| Join | `/join/:token` | Accept invite: validates token, shows org/role, creates account |
+| Dashboard | `/` | Attention banner (critical issues), KPI cards, feature summary row (security/drift/AI/contracts counts), response trends, risk distribution, uptime overview, top failures, live activity feed (WebSocket), onboarding checklist, endpoint table with live timestamps and pulse animation |
 | Endpoint Detail | `/endpoints/:id` | Full endpoint view: runs, performance chart, risk breakdown, anomaly analysis, debug assistant, alert rules, SLA, schema drift, schema timeline, security findings, contract violations, incidents |
-| Add Endpoint | `/endpoints/new` | Create endpoint with V2 config (URL, method, headers, auth, body, cookies, query params, advanced settings) |
-| Edit Endpoint | `/endpoints/:id/edit` | Update endpoint configuration |
-| Incidents | `/incidents` | List with status tabs (All, Open, Investigating, Resolved) |
+| Add Endpoint | `/endpoints/new` | Guided form with templates (Health Check, REST API, Webhook, GraphQL), draft auto-save, inline validation, Postman-style URL bar, monitoring interval presets, test → capture schema → create flow, completion indicator |
+| Edit Endpoint | `/endpoints/:id/edit` | Same form as Add Endpoint, hydrated with existing data |
+| Incidents | `/incidents` | Summary banner (open count, severity breakdown, avg resolution time), enriched cards with trigger detail, duration, endpoint links, quick acknowledge/resolve actions |
 | Incident Detail | `/incidents/:id` | Timeline, notes, status management, metadata |
 | AI Telemetry | `/ai-telemetry` | LLM cost dashboard with KPI cards, charts, health monitor |
 | Security | `/security` | Credential leak findings, stats cards, type breakdown |
 | Export | `/export` | CSV downloads with type/date/endpoint filters |
 | API Tester | `/api-tester` | Manual API testing with full request configuration |
+| Profile Settings | `/settings` | Edit name/email, change password, role badge, account info |
+| Team Settings | `/settings/team` | Member list with role management, invite members with copyable link, pending invites with revoke, OWNER protection |
+| Org Settings | `/settings/organization` | Edit org name/slug, member count, ownership transfer (OWNER only) |
 
 ### Design System
 
 - **Typography**: Sentient (variable serif) for headings, Inter for body text, JetBrains Mono for code
 - **Color tokens**: Design tokens for surfaces, text, borders, risk levels, accents, and semantic colors
-- **Components**: Card system, button variants (primary/secondary), input styles, skeleton loaders, toast notifications
+- **Components**: Card system, button variants (primary/secondary), input styles, skeleton loaders, toast notifications, GlowCard spotlight effect
 - **Charts**: Recharts (area, bar, line) with custom tooltips
-- **Animations**: Fade-in, slide-in, pulse-ring keyframes
+- **Animations**: Fade-in, slide-in, pulse-ring keyframes, endpoint pulse on WebSocket events
 - **Responsive**: Mobile-first grid layouts, collapsible sidebar
+- **Permission-aware UI**: Write actions hidden for VIEWER role, admin features hidden for MEMBER/VIEWER
+- **Error handling**: Standardized `extractApiError()` utility across all forms with field-level validation messages
+
+### Real-Time Dashboard Features
+
+- **Attention Banner**: Shows critical/high incidents, high-risk endpoints (score >75), and security findings. Green "All systems operational" when healthy.
+- **Live Activity Feed**: WebSocket-powered event stream showing monitoring runs, risk updates, anomalies, incidents, and SLA breaches in real-time.
+- **Feature Summary Row**: 4 clickable cards showing 24h counts for security findings, schema drifts, AI analyses, and contract violations — makes hidden features discoverable.
+- **Endpoint Pulse**: Table rows flash green when a new monitoring run arrives via WebSocket. "Last checked" timestamps auto-update every 30 seconds.
+- **Sidebar Incident Badge**: Red count badge on Incidents nav item showing open incident count.
+- **Educational Empty States**: All detail tabs (schema drift, security, contracts, debug, anomaly) show explanatory text instead of generic "No data".
 
 ---
 
@@ -443,7 +474,7 @@ Full interactive documentation available at `/docs` (Swagger UI).
 
 | Service | Image | Ports | Health Check |
 |---------|-------|-------|-------------|
-| db | postgres:16-alpine | 5432 (internal) | `pg_isready` every 5s |
+| db | postgres:16-alpine | 127.0.0.1:5432 (localhost + internal) | `pg_isready` every 5s |
 | api | Custom (Python 3.13-slim) | 8000 (internal) | `/api/v1/health` every 30s |
 | nginx | nginx:1.27-alpine | 80, 443 | — |
 
@@ -461,6 +492,18 @@ git pull origin main
 docker compose build api
 docker compose up -d api
 docker compose restart nginx
+```
+
+### Direct Database Access
+
+```bash
+# SSH into the server and use psql
+ssh root@64.227.143.70
+docker exec -it sentinelai-db-1 psql -U sentinel -d sentinel_db
+
+# SSH tunnel for GUI tools (DBeaver, pgAdmin, DataGrip)
+ssh -L 5433:localhost:5432 root@64.227.143.70
+# Connect GUI to: localhost:5433, user=sentinel, pass=sentinel, db=sentinel_db
 ```
 
 ### Automated Operations
@@ -562,22 +605,28 @@ sentinel health
 
 | Metric | Value |
 |--------|-------|
-| Database tables | 15 |
-| API endpoints | 70+ |
-| Alembic migrations | 10 |
+| Database tables | 16 |
+| API endpoints | 85+ |
+| Alembic migrations | 11 |
+| RBAC roles | 4 (OWNER, ADMIN, MEMBER, VIEWER) |
 | Security scan patterns | 16 |
 | Risk engine weights | 7 (summing to 100) |
-| Frontend pages | 11 |
-| Frontend components | 40+ |
+| Frontend pages | 17 (including auth + settings) |
+| Frontend components | 55+ |
 | Alert condition types | 7 |
 | WebSocket event types | 5 |
 | Export formats | 4 (CSV) |
 | CSV max rows | 10,000 per export |
+| Endpoint form templates | 4 (Health Check, REST API, Webhook, GraphQL) |
 | Default monitoring interval | 300 seconds (5 min) |
 | JWT access token lifetime | 15 minutes |
 | Refresh token lifetime | 7 days |
+| Invite token expiry | 7 days |
+| Invite token entropy | 256 bits (64 hex chars) |
 | Alert cooldown | 15 minutes per endpoint |
 | Performance window | 20 runs (configurable 3-100) |
 | Spike threshold | 50% deviation |
 | Critical spike threshold | 150% deviation |
 | Auto-resolve window | 3 days of consecutive success |
+| Password minimum length | 8 characters |
+| Brute-force lockout | 5 attempts / 15 minutes |
