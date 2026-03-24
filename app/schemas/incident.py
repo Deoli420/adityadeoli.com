@@ -43,6 +43,7 @@ class IncidentRead(BaseModel):
     trigger_type: str
     trigger_run_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
+    narrative: Optional[str] = None
     started_at: datetime
     acknowledged_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
@@ -64,5 +65,6 @@ class IncidentListItem(BaseModel):
     started_at: datetime
     resolved_at: Optional[datetime] = None
     endpoint_name: str = ""
+    narrative: str | None = None
 
     model_config = {"from_attributes": True}

@@ -74,6 +74,7 @@ class Incident(Base):
     fingerprint: Mapped[Optional[str]] = mapped_column(
         String(64), nullable=True, index=True
     )
+    narrative: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

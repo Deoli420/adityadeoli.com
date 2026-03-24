@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { PatternMatchCard } from "@/components/incidents/PatternMatchCard.tsx";
+import { NarrativeCard } from "@/components/incidents/NarrativeCard.tsx";
 import type { IncidentStatus, IncidentSeverity, IncidentEvent } from "@/types/index.ts";
 
 const SEVERITY_COLORS: Record<IncidentSeverity, string> = {
@@ -255,6 +256,9 @@ export function IncidentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Narrative */}
+      <NarrativeCard incidentId={id!} narrative={incident?.narrative} />
 
       {/* Pattern match / fingerprinting */}
       <PatternMatchCard incidentId={id!} />

@@ -140,6 +140,66 @@ async def get_similar_incidents(
     }
 
 
+@router.post("/{incident_id}/generate-narrative", dependencies=[RequireWrite])
+async def generate_narrative(
+    incident_id: uuid.UUID,
+    user: CurrentUser,
+    tenant_id: TenantId,
+    session: AsyncSession = Depends(get_session),
+):
+    """Regenerate narrative for an incident on demand."""
+    from app.ai.llm_client import llm_client
+    from app.repositories.fingerprint import FingerprintRepository
+    from app.services.fingerprint import FingerprintService
+    from app.services.narrative import NarrativeService
+
+    repo = IncidentRepository(session)
+    svc = IncidentService(repo)
+    incident = await svc.get_incident(incident_id, tenant_id)
+
+    # Get fingerprint match data
+    match_data = {"occurrence_count": 1, "avg_resolution_ms": None, "last_resolution_notes": None}
+    cross_count = 0
+    signal_flags = []
+
+    if incident.fingerprint:
+        fp_repo = FingerprintRepository(session)
+        cache_entry = await fp_repo.get_cache_entry(incident.fingerprint, incident.endpoint_id)
+        if cache_entry:
+            match_data["occurrence_count"] = cache_entry.occurrence_count
+            match_data["avg_resolution_ms"] = cache_entry.avg_resolution_ms
+            match_data["last_resolution_notes"] = cache_entry.last_resolution_notes
+            signal_flags = cache_entry.signal_flags or []
+
+        cross = await fp_repo.get_cross_endpoint_matches(
+            incident.fingerprint, tenant_id, incident.endpoint_id
+        )
+        cross_count = len(cross)
+
+    narrative_svc = NarrativeService(llm=llm_client)
+
+    # Get endpoint name
+    from app.models.api_endpoint import ApiEndpoint
+    ep = await session.get(ApiEndpoint, incident.endpoint_id)
+    ep_name = ep.name if ep else "Unknown"
+
+    narrative = await narrative_svc.generate(
+        endpoint_name=ep_name,
+        severity=incident.severity,
+        signal_flags=signal_flags,
+        anomaly_reasoning=incident.title,
+        occurrence_count=match_data["occurrence_count"],
+        avg_resolution_ms=match_data["avg_resolution_ms"],
+        last_resolution_notes=match_data["last_resolution_notes"],
+        cross_endpoint_count=cross_count,
+    )
+
+    incident.narrative = narrative
+    await session.commit()
+
+    return {"narrative": narrative}
+
+
 @router.post("/{incident_id}/notes", response_model=IncidentRead, dependencies=[RequireWrite])
 async def add_note(
     incident_id: uuid.UUID,

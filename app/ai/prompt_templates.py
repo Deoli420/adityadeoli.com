@@ -170,3 +170,54 @@ def _fmt_schema(diff: dict[str, Any]) -> str:
         parts.append(f"type changes: [{', '.join(items)}]")
 
     return "; ".join(parts)
+
+
+# ── Narrative Engine ─────────────────────────────────────────────────────
+
+NARRATIVE_SYSTEM_PROMPT = """You are a concise incident narrator for SentinelAI, an API monitoring platform.
+
+Given structured incident data, write a 2-4 sentence narrative that answers:
+1. What happened? (signals, severity, status code)
+2. Has this happened before? (pattern recurrence)
+3. What should the developer try? (past resolution or suggested action)
+
+Rules:
+- Be specific: mention endpoint names, status codes, latency values
+- Be concise: max 4 sentences total
+- If past resolution exists, recommend it
+- Use plain technical language, no marketing speak
+
+Respond in JSON: {"narrative": "...", "suggested_action": "..."}
+The suggested_action is optional — only include if past resolution data gives a clear action."""
+
+
+def build_narrative_prompt(
+    endpoint_name: str,
+    signal_flags: list[str],
+    severity: str,
+    status_code: int | None,
+    response_time_ms: float | None,
+    anomaly_reasoning: str | None,
+    occurrence_count: int,
+    avg_resolution_ms: int | None,
+    last_resolution_notes: str | None,
+    cross_endpoint_count: int = 0,
+) -> str:
+    lines = [f"Endpoint: {_sanitize(endpoint_name, 200)}"]
+    lines.append(f"Severity: {severity}")
+    if status_code is not None:
+        lines.append(f"Status code: {status_code}")
+    if response_time_ms is not None:
+        lines.append(f"Response time: {response_time_ms:.0f}ms")
+    lines.append(f"Signal flags: {', '.join(signal_flags) if signal_flags else 'none'}")
+    if anomaly_reasoning:
+        lines.append(f"AI analysis: {_sanitize(anomaly_reasoning, 500)}")
+    lines.append(f"Pattern occurrences: {occurrence_count}")
+    if avg_resolution_ms:
+        minutes = avg_resolution_ms / 60000
+        lines.append(f"Avg resolution time: {minutes:.0f} minutes")
+    if last_resolution_notes:
+        lines.append(f"Last resolution: {_sanitize(last_resolution_notes, 300)}")
+    if cross_endpoint_count > 0:
+        lines.append(f"Same pattern seen on {cross_endpoint_count} other endpoint(s)")
+    return "\n".join(lines)

@@ -99,6 +99,11 @@ function IncidentRow({ incident }: { incident: IncidentListItem }) {
         <p className="truncate text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
           {incident.title}
         </p>
+        {incident.narrative && (
+          <p className="mt-0.5 text-[11px] text-text-tertiary line-clamp-1">
+            {incident.narrative}
+          </p>
+        )}
         <div className="mt-1 flex items-center gap-3 text-xs text-text-secondary">
           <Link
             to={`/endpoints/${incident.endpoint_id}`}

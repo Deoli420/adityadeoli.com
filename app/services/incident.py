@@ -86,6 +86,7 @@ class IncidentService:
                     started_at=inc.started_at,
                     resolved_at=inc.resolved_at,
                     endpoint_name=ep_name,
+                    narrative=inc.narrative,
                 )
             )
         return items

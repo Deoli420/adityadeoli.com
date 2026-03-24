@@ -393,6 +393,13 @@ export async function getIncidentSimilar(id: string): Promise<IncidentSimilarRes
   return data;
 }
 
+export async function generateNarrative(id: string): Promise<{ narrative: string }> {
+  const { data } = await apiClient.post<{ narrative: string }>(
+    `${API}/incidents/${id}/generate-narrative`,
+  );
+  return data;
+}
+
 // ── Export ─────────────────────────────────────────────────────────────────
 
 export interface ExportParams {

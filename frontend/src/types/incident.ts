@@ -16,6 +16,8 @@ export interface Incident {
   acknowledged_at: string | null;
   resolved_at: string | null;
   auto_resolve_after: number;
+  fingerprint: string | null;
+  narrative: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +32,7 @@ export interface IncidentListItem {
   started_at: string;
   resolved_at: string | null;
   endpoint_name: string;
+  narrative: string | null;
 }
 
 export interface IncidentEvent {

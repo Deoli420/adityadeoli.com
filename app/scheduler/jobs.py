@@ -233,6 +233,24 @@ async def _manage_incidents(eid: uuid.UUID, pipeline) -> None:  # noqa: ANN001
                     endpoint_id=eid,
                     org_id=pipeline.run.organization_id,
                 )
+                # Generate narrative
+                from app.services.narrative import NarrativeService
+
+                narrative_svc = NarrativeService(llm=llm_client)
+                narrative = await narrative_svc.generate(
+                    endpoint_name=pipeline.endpoint_name,
+                    severity=incident.severity,
+                    signal_flags=signal_flags,
+                    status_code=pipeline.run.status_code,
+                    response_time_ms=pipeline.run.response_time_ms,
+                    anomaly_reasoning=pipeline.anomaly.reasoning if pipeline.anomaly else None,
+                    occurrence_count=matches.exact_match["occurrence_count"] if matches.exact_match else 1,
+                    avg_resolution_ms=matches.exact_match["avg_resolution_ms"] if matches.exact_match else None,
+                    last_resolution_notes=matches.exact_match["last_resolution_notes"] if matches.exact_match else None,
+                    cross_endpoint_count=len(matches.cross_endpoint_matches),
+                )
+                incident.narrative = narrative
+
                 if matches.exact_match or matches.fuzzy_matches or matches.cross_endpoint_matches:
                     inc_repo = IncidentRepository(session)
                     await inc_repo.add_event(

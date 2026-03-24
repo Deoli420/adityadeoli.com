@@ -8,6 +8,7 @@ import {
   createIncident,
   updateIncidentStatus,
   addIncidentNote,
+  generateNarrative,
 } from "@/services/endpointsService.ts";
 import type {
   IncidentCreate,
@@ -95,5 +96,18 @@ export function useAddIncidentNote(id: string) {
       toast.success("Note added");
     },
     onError: (err) => toast.error(extractApiError(err, "Failed to add note")),
+  });
+}
+
+export function useGenerateNarrative(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => generateNarrative(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["incident", id] });
+      qc.invalidateQueries({ queryKey: ["incidents"] });
+      toast.success("Narrative generated");
+    },
+    onError: (err) => toast.error(extractApiError(err, "Failed to generate narrative")),
   });
 }
