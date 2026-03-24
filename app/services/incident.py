@@ -106,6 +106,7 @@ class IncidentService:
         incident_id: uuid.UUID,
         data: IncidentStatusUpdate,
         tenant_id: uuid.UUID,
+        fp_repo=None,
     ) -> Incident:
         incident = await self.get_incident(incident_id, tenant_id)
         old_status = incident.status
@@ -116,6 +117,20 @@ class IncidentService:
             incident.acknowledged_at = now
         elif data.status == "RESOLVED":
             incident.resolved_at = now
+
+            # Update fingerprint cache with resolution info
+            if incident.fingerprint and fp_repo is not None:
+                resolution_ms = None
+                if incident.started_at:
+                    delta = now - incident.started_at
+                    resolution_ms = int(delta.total_seconds() * 1000)
+                if resolution_ms is not None:
+                    await fp_repo.update_cache_on_resolve(
+                        fingerprint=incident.fingerprint,
+                        endpoint_id=incident.endpoint_id,
+                        resolution_ms=resolution_ms,
+                        notes=incident.notes,
+                    )
 
         incident = await self._repo.update(incident)
 
@@ -168,6 +183,7 @@ class IncidentService:
         run_id: uuid.UUID,
         reasoning: str | None,
         severity_score: float,
+        fingerprint: str | None = None,
     ) -> Incident | None:
         """Create an incident from an anomaly if no open incident exists."""
         existing = await self._repo.get_open_for_endpoint(endpoint_id)
@@ -194,6 +210,7 @@ class IncidentService:
             severity=severity,
             trigger_type="anomaly",
             trigger_run_id=run_id,
+            fingerprint=fingerprint,
         )
         incident = await self._repo.create(incident)
 

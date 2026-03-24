@@ -182,11 +182,19 @@ async def _evaluate_alert_rules(eid: uuid.UUID, pipeline) -> None:  # noqa: ANN0
 
 async def _manage_incidents(eid: uuid.UUID, pipeline) -> None:  # noqa: ANN001
     """Auto-create incidents from anomalies and auto-resolve on recovery."""
+    from app.models.incident import IncidentEvent
+    from app.repositories.fingerprint import FingerprintRepository
     from app.repositories.incident import IncidentRepository
+    from app.services.fingerprint import FingerprintService
     from app.services.incident import IncidentService
 
     async with async_session_factory() as session:
         svc = IncidentService(IncidentRepository(session))
+        fp_repo = FingerprintRepository(session)
+        fp_svc = FingerprintService()
+
+        # Compute fingerprint from pipeline
+        fingerprint, signal_flags = FingerprintService.compute_from_pipeline(pipeline)
 
         # Auto-create from anomaly
         if pipeline.anomaly and pipeline.anomaly.anomaly_detected:
@@ -198,14 +206,48 @@ async def _manage_incidents(eid: uuid.UUID, pipeline) -> None:  # noqa: ANN001
                 severity_score=(
                     pipeline.risk.calculated_score if pipeline.risk else 0.5
                 ),
+                fingerprint=fingerprint,
             )
             if incident:
                 logger.info(
-                    "Auto-created incident %s for %s (severity=%s)",
+                    "Auto-created incident %s for %s (severity=%s fingerprint=%s)",
                     incident.id,
                     pipeline.endpoint_name,
                     incident.severity,
+                    fingerprint[:12],
                 )
+
+                # Upsert fingerprint cache
+                await fp_repo.upsert_cache(
+                    fingerprint=fingerprint,
+                    endpoint_id=eid,
+                    org_id=pipeline.run.organization_id,
+                    signal_flags=signal_flags,
+                )
+
+                # Find matches and store as an event
+                matches = await fp_svc.find_matches(
+                    repo=fp_repo,
+                    fingerprint=fingerprint,
+                    signal_flags=signal_flags,
+                    endpoint_id=eid,
+                    org_id=pipeline.run.organization_id,
+                )
+                if matches.exact_match or matches.fuzzy_matches or matches.cross_endpoint_matches:
+                    inc_repo = IncidentRepository(session)
+                    await inc_repo.add_event(
+                        IncidentEvent(
+                            incident_id=incident.id,
+                            event_type="fingerprint_match",
+                            detail={
+                                "fingerprint": fingerprint,
+                                "signal_flags": signal_flags,
+                                "exact_match": matches.exact_match,
+                                "fuzzy_matches": matches.fuzzy_matches[:5],
+                                "cross_endpoint_matches": matches.cross_endpoint_matches[:5],
+                            },
+                        )
+                    )
 
         # Auto-resolve on consecutive successes
         if pipeline.run.is_success:

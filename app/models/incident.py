@@ -71,6 +71,9 @@ class Incident(Base):
     auto_resolve_after: Mapped[int] = mapped_column(
         Integer, nullable=False, default=3, server_default="3"
     )
+    fingerprint: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

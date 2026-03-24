@@ -84,9 +84,60 @@ async def update_status(
     data: IncidentStatusUpdate,
     user: CurrentUser,
     tenant_id: TenantId,
+    session: AsyncSession = Depends(get_session),
     service: IncidentService = Depends(_get_service),
 ):
-    return await service.update_status(incident_id, data, tenant_id)
+    from app.repositories.fingerprint import FingerprintRepository
+
+    fp_repo = FingerprintRepository(session)
+    return await service.update_status(incident_id, data, tenant_id, fp_repo=fp_repo)
+
+
+@router.get("/{incident_id}/similar")
+async def get_similar_incidents(
+    incident_id: uuid.UUID,
+    user: CurrentUser,
+    tenant_id: TenantId,
+    session: AsyncSession = Depends(get_session),
+    service: IncidentService = Depends(_get_service),
+):
+    """Find similar incidents by fingerprint — exact, fuzzy, and cross-endpoint matches."""
+    from app.repositories.fingerprint import FingerprintRepository
+    from app.services.fingerprint import FingerprintService
+
+    incident = await service.get_incident(incident_id, tenant_id)
+
+    if not incident.fingerprint:
+        return {
+            "fingerprint": None,
+            "signal_flags": [],
+            "exact_match": None,
+            "fuzzy_matches": [],
+            "cross_endpoint_matches": [],
+        }
+
+    fp_repo = FingerprintRepository(session)
+    fp_svc = FingerprintService()
+
+    # Retrieve signal flags from the cache entry
+    cache_entry = await fp_repo.get_cache_entry(incident.fingerprint, incident.endpoint_id)
+    signal_flags = cache_entry.signal_flags if cache_entry else []
+
+    matches = await fp_svc.find_matches(
+        repo=fp_repo,
+        fingerprint=incident.fingerprint,
+        signal_flags=signal_flags,
+        endpoint_id=incident.endpoint_id,
+        org_id=incident.organization_id,
+    )
+
+    return {
+        "fingerprint": incident.fingerprint,
+        "signal_flags": signal_flags,
+        "exact_match": matches.exact_match,
+        "fuzzy_matches": matches.fuzzy_matches,
+        "cross_endpoint_matches": matches.cross_endpoint_matches,
+    }
 
 
 @router.post("/{incident_id}/notes", response_model=IncidentRead, dependencies=[RequireWrite])

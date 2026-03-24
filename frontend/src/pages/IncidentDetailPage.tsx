@@ -20,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import clsx from "clsx";
+import { PatternMatchCard } from "@/components/incidents/PatternMatchCard.tsx";
 import type { IncidentStatus, IncidentSeverity, IncidentEvent } from "@/types/index.ts";
 
 const SEVERITY_COLORS: Record<IncidentSeverity, string> = {
@@ -254,6 +255,9 @@ export function IncidentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Pattern match / fingerprinting */}
+      <PatternMatchCard incidentId={id!} />
 
       {/* Two-column: Notes + Timeline */}
       <div className="grid gap-6 lg:grid-cols-5">

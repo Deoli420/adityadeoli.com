@@ -364,6 +364,35 @@ export async function addIncidentNote(
   return data;
 }
 
+// ── Incident Fingerprinting ─────────────────────────────────────────────
+
+export interface IncidentSimilarResponse {
+  fingerprint: string | null;
+  signal_flags: string[];
+  exact_match: {
+    occurrence_count: number;
+    avg_resolution_ms: number | null;
+    last_resolution_notes: string | null;
+  } | null;
+  fuzzy_matches: {
+    incident_id: string;
+    title: string;
+    similarity: number;
+    resolved_at: string | null;
+  }[];
+  cross_endpoint_matches: {
+    endpoint_name: string;
+    occurrence_count: number;
+  }[];
+}
+
+export async function getIncidentSimilar(id: string): Promise<IncidentSimilarResponse> {
+  const { data } = await apiClient.get<IncidentSimilarResponse>(
+    `${API}/incidents/${id}/similar`,
+  );
+  return data;
+}
+
 // ── Export ─────────────────────────────────────────────────────────────────
 
 export interface ExportParams {
