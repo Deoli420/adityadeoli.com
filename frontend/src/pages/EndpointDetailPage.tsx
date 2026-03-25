@@ -24,6 +24,7 @@ import {
   useLastRunResult,
 } from "@/hooks/useEndpointDetails.ts";
 import { useDeleteEndpoint } from "@/hooks/useEndpoints.ts";
+import { useCanWrite } from "@/hooks/useAuth.ts";
 import { useEndpointIncidents } from "@/hooks/useIncidents.ts";
 import { RiskBadge } from "@/components/common/RiskBadge.tsx";
 import { Skeleton } from "@/components/common/Skeleton.tsx";
@@ -67,6 +68,7 @@ export function EndpointDetailPage() {
   const triggerRun = useTriggerMonitorRun(id!);
   const deleteMutation = useDeleteEndpoint();
   const { data: incidents } = useEndpointIncidents(id!);
+  const canWrite = useCanWrite();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (isLoading) {
@@ -177,20 +179,25 @@ export function EndpointDetailPage() {
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 shrink-0">
-              <Link
-                to={`/endpoints/${id}/edit`}
-                className="btn-secondary"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Edit
-              </Link>
-              <button
-                className="btn-secondary !text-risk-critical hover:!bg-risk-critical-bg hover:!border-risk-critical/30"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete
-              </button>
+              {canWrite && (
+                <>
+                  <Link
+                    to={`/endpoints/${id}/edit`}
+                    className="btn-secondary"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Link>
+                  <button
+                    className="btn-secondary !text-risk-critical hover:!bg-risk-critical-bg hover:!border-risk-critical/30"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </button>
+                </>
+              )}
+              {canWrite && (
               <button
                 className="btn-primary"
                 disabled={triggerRun.isPending}
@@ -208,6 +215,7 @@ export function EndpointDetailPage() {
                   </>
                 )}
               </button>
+              )}
             </div>
           </div>
         </div>

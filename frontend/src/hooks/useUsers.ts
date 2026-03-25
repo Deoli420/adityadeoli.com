@@ -1,5 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUsers, updateProfile, changePassword, changeUserRole, removeUser } from "@/services/userService.ts";
+import {
+  getUsers,
+  updateProfile,
+  changePassword,
+  changeUserRole,
+  removeUser,
+  getOrganization,
+  updateOrganization,
+  transferOwnership,
+} from "@/services/userService.ts";
 import toast from "react-hot-toast";
 import { extractApiError } from "@/utils/extractApiError.ts";
 
@@ -39,5 +48,33 @@ export function useRemoveUser() {
     mutationFn: removeUser,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["users"] }); toast.success("Member removed"); },
     onError: (err) => toast.error(extractApiError(err, "Failed to remove member")),
+  });
+}
+
+// ── Organization ────────────────────────────────────────────────────────
+
+export function useOrganization() {
+  return useQuery({ queryKey: ["organization"], queryFn: getOrganization });
+}
+
+export function useUpdateOrganization() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name?: string; slug?: string }) => updateOrganization(data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["organization"] }); toast.success("Organization updated"); },
+    onError: (err) => toast.error(extractApiError(err, "Failed to update organization")),
+  });
+}
+
+export function useTransferOwnership() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (newOwnerId: string) => transferOwnership(newOwnerId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      qc.invalidateQueries({ queryKey: ["organization"] });
+      toast.success("Ownership transferred");
+    },
+    onError: (err) => toast.error(extractApiError(err, "Failed to transfer ownership")),
   });
 }
