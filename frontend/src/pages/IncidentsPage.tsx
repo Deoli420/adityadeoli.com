@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCanWrite } from "@/hooks/useAuth.ts";
 import { useIncidents, useUpdateIncidentStatus } from "@/hooks/useIncidents.ts";
+import { useClusters } from "@/hooks/useClusters.ts";
+import { ClusterCard } from "@/components/incidents/ClusterCard.tsx";
 import { formatDuration } from "@/utils/formatters.ts";
 import { IncidentSummaryBanner } from "@/components/incidents/IncidentSummaryBanner.tsx";
 import {
@@ -15,6 +17,7 @@ import {
   Bell,
   UserCircle,
   Loader2,
+  Zap,
 } from "lucide-react";
 import clsx from "clsx";
 import type { IncidentListItem, IncidentStatus, IncidentSeverity } from "@/types/index.ts";
@@ -24,6 +27,7 @@ const TABS: { label: string; value: string | undefined; icon: React.ElementType 
   { label: "Open", value: "OPEN", icon: ShieldAlert },
   { label: "Investigating", value: "INVESTIGATING", icon: Search },
   { label: "Resolved", value: "RESOLVED", icon: CheckCircle2 },
+  { label: "Clusters", value: "CLUSTERS", icon: Zap },
 ];
 
 const SEVERITY_COLORS: Record<IncidentSeverity, string> = {
@@ -204,8 +208,10 @@ function SkeletonRow() {
 
 export function IncidentsPage() {
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
-  const { data: incidents, isLoading } = useIncidents(activeTab);
+  const isClustersTab = activeTab === "CLUSTERS";
+  const { data: incidents, isLoading } = useIncidents(isClustersTab ? undefined : activeTab);
   const { data: allIncidents } = useIncidents(undefined);
+  const { data: clusters, isLoading: clustersLoading } = useClusters();
 
   const openCount = incidents?.filter((i) => i.status === "OPEN").length ?? 0;
 
@@ -252,7 +258,25 @@ export function IncidentsPage() {
 
       {/* List */}
       <div className="space-y-2">
-        {isLoading ? (
+        {isClustersTab ? (
+          clustersLoading ? (
+            Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
+          ) : clusters && clusters.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {clusters.map((c) => (
+                <ClusterCard key={c.id} cluster={c} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface py-16">
+              <Zap className="h-10 w-10 text-amber-500/40 mb-3" />
+              <p className="text-sm font-medium text-text-secondary">No clusters detected</p>
+              <p className="mt-1 text-xs text-text-tertiary">
+                Clusters form when multiple endpoints exhibit correlated failures
+              </p>
+            </div>
+          )
+        ) : isLoading ? (
           Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
         ) : incidents && incidents.length > 0 ? (
           incidents.map((inc) => <IncidentRow key={inc.id} incident={inc} />)

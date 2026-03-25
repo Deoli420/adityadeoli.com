@@ -251,6 +251,21 @@ async def _manage_incidents(eid: uuid.UUID, pipeline) -> None:  # noqa: ANN001
                 )
                 incident.narrative = narrative
 
+                # Cluster detection
+                from app.repositories.cluster import ClusterRepository
+                from app.services.cluster import ClusterService
+
+                cluster_repo = ClusterRepository(session)
+                cluster_svc = ClusterService(cluster_repo)
+                cluster = await cluster_svc.detect_and_assign(
+                    incident, signal_flags, pipeline.run.organization_id
+                )
+                if cluster:
+                    logger.info(
+                        "Incident %s assigned to cluster %s",
+                        incident.id, cluster.id,
+                    )
+
                 if matches.exact_match or matches.fuzzy_matches or matches.cross_endpoint_matches:
                     inc_repo = IncidentRepository(session)
                     await inc_repo.add_event(

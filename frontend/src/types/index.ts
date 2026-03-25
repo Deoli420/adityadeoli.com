@@ -61,6 +61,8 @@ export type {
   IncidentCreate,
   IncidentStatusUpdate,
   IncidentNoteCreate,
+  IncidentClusterListItem,
+  IncidentClusterDetail,
 } from "./incident.ts";
 export type {
   AiTelemetryStats,

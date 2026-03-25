@@ -75,6 +75,9 @@ class Incident(Base):
         String(64), nullable=True, index=True
     )
     narrative: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    cluster_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("incident_clusters.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -85,6 +88,7 @@ class Incident(Base):
     # Relationships
     endpoint: Mapped["ApiEndpoint"] = relationship()  # noqa: F821
     organization: Mapped["Organization"] = relationship()  # noqa: F821
+    cluster: Mapped[Optional["IncidentCluster"]] = relationship(back_populates="incidents", foreign_keys=[cluster_id])  # noqa: F821
     events: Mapped[list["IncidentEvent"]] = relationship(
         back_populates="incident", passive_deletes=True, cascade="all, delete-orphan",
         order_by="IncidentEvent.created_at.desc()",

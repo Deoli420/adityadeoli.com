@@ -25,6 +25,7 @@ from app.api.v1.contracts import router as contracts_router
 from app.api.v1.users import router as users_router
 from app.api.v1.invites import router as invites_router
 from app.api.v1.organization import router as organization_router
+from app.api.v1.clusters import router as clusters_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(health_router)
@@ -52,3 +53,4 @@ v1_router.include_router(contracts_router)
 v1_router.include_router(users_router)
 v1_router.include_router(invites_router)
 v1_router.include_router(organization_router)
+v1_router.include_router(clusters_router)

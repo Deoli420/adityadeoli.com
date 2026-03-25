@@ -18,6 +18,7 @@ export interface Incident {
   auto_resolve_after: number;
   fingerprint: string | null;
   narrative: string | null;
+  cluster_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,4 +60,20 @@ export interface IncidentStatusUpdate {
 
 export interface IncidentNoteCreate {
   note: string;
+}
+
+export interface IncidentClusterListItem {
+  id: string;
+  title: string;
+  status: "ACTIVE" | "RESOLVED" | "MERGED";
+  shared_signals: string[];
+  member_count: number;
+  detected_at: string;
+  resolved_at: string | null;
+}
+
+export interface IncidentClusterDetail extends IncidentClusterListItem {
+  organization_id: string;
+  root_cause_summary: string | null;
+  incidents: IncidentListItem[];
 }

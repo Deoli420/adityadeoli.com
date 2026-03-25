@@ -13,6 +13,7 @@ import { SecurityPage } from "@/pages/SecurityPage.tsx";
 import { LoginPage } from "@/pages/LoginPage.tsx";
 import { SignupPage } from "@/pages/SignupPage.tsx";
 import { JoinPage } from "@/pages/JoinPage.tsx";
+import { ClusterDetailPage } from "@/pages/ClusterDetailPage.tsx";
 import { NotFoundPage } from "@/pages/NotFoundPage.tsx";
 import { PrivateRoute } from "@/components/auth/PrivateRoute.tsx";
 import { SettingsLayout } from "@/pages/settings/SettingsLayout.tsx";
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
           { path: "endpoints/new", element: <CreateEndpointPage /> },
           { path: "incidents", element: <IncidentsPage /> },
           { path: "incidents/:id", element: <IncidentDetailPage /> },
+          { path: "incidents/clusters/:id", element: <ClusterDetailPage /> },
           { path: "export", element: <ExportPage /> },
           { path: "ai-telemetry", element: <AiTelemetryPage /> },
           { path: "security", element: <SecurityPage /> },

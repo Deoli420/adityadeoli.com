@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, Shield, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Shield, TrendingUp, Zap } from "lucide-react";
 import clsx from "clsx";
 import { useIncidents } from "@/hooks/useIncidents.ts";
+import { useClusters } from "@/hooks/useClusters.ts";
 import { useFeatureSummary } from "@/hooks/useFeatureSummary.ts";
 import { useSecurityStats } from "@/hooks/useSecurity.ts";
 import { Skeleton } from "@/components/common/Skeleton.tsx";
@@ -11,7 +12,7 @@ import { Skeleton } from "@/components/common/Skeleton.tsx";
 // ── Types ────────────────────────────────────────────────────────────────
 
 interface AttentionItem {
-  type: "incident" | "risk" | "security";
+  type: "incident" | "risk" | "security" | "cluster";
   label: string;
   link: string;
   severity: "CRITICAL" | "HIGH" | "MEDIUM";
@@ -27,6 +28,7 @@ const TYPE_ICON = {
   incident: AlertTriangle,
   risk: TrendingUp,
   security: Shield,
+  cluster: Zap,
 } as const;
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ const TYPE_ICON = {
  */
 export function AttentionBanner() {
   const incidents = useIncidents("OPEN");
+  const { data: activeClusters } = useClusters("ACTIVE");
   const features = useFeatureSummary();
   const security = useSecurityStats(1);
 
@@ -68,6 +71,18 @@ export function AttentionBanner() {
       });
     }
 
+    // Active clusters
+    if (activeClusters && activeClusters.length > 0) {
+      for (const cluster of activeClusters) {
+        out.push({
+          type: "cluster",
+          label: `Cluster: ${cluster.member_count} endpoints failing simultaneously`,
+          link: `/incidents/clusters/${cluster.id}`,
+          severity: "HIGH",
+        });
+      }
+    }
+
     // Security findings in last 24 h
     const count = features.data?.security_findings_24h ?? 0;
     if (count > 0) {
@@ -80,7 +95,7 @@ export function AttentionBanner() {
     }
 
     return out;
-  }, [incidents.data, features.data]);
+  }, [incidents.data, features.data, activeClusters]);
 
   // ── Loading skeleton ───────────────────────────────────────────────────
   if (isLoading) {

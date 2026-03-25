@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   Zap,
   User,
+  ChevronRight,
 } from "lucide-react";
 import clsx from "clsx";
 import { PatternMatchCard } from "@/components/incidents/PatternMatchCard.tsx";
@@ -256,6 +257,20 @@ export function IncidentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Cluster banner */}
+      {incident?.cluster_id && (
+        <Link
+          to={`/incidents/clusters/${incident.cluster_id}`}
+          className="card bg-amber-500/5 border-amber-500/20 p-3 flex items-center gap-2 hover:bg-amber-500/10 transition-colors"
+        >
+          <Zap className="h-4 w-4 text-amber-500" />
+          <span className="text-sm text-text-primary font-medium">
+            Part of a cluster — multiple endpoints affected
+          </span>
+          <ChevronRight className="h-4 w-4 text-text-tertiary ml-auto" />
+        </Link>
+      )}
 
       {/* Narrative */}
       <NarrativeCard incidentId={id!} narrative={incident?.narrative} />

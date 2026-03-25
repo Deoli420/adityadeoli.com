@@ -25,6 +25,8 @@ import type {
   IncidentCreate,
   IncidentStatusUpdate,
   IncidentNoteCreate,
+  IncidentClusterListItem,
+  IncidentClusterDetail,
 } from "@/types/index.ts";
 
 const API = "/api/v1";
@@ -361,6 +363,25 @@ export async function addIncidentNote(
     `${API}/incidents/${id}/notes`,
     payload,
   );
+  return data;
+}
+
+// ── Clusters ──────────────────────────────────────────────────────────
+
+export async function getClusters(status?: string): Promise<IncidentClusterListItem[]> {
+  const params: Record<string, string> = {};
+  if (status) params.status = status;
+  const { data } = await apiClient.get<IncidentClusterListItem[]>(`${API}/clusters/`, { params });
+  return data;
+}
+
+export async function getCluster(id: string): Promise<IncidentClusterDetail> {
+  const { data } = await apiClient.get<IncidentClusterDetail>(`${API}/clusters/${id}`);
+  return data;
+}
+
+export async function updateCluster(id: string, payload: { title?: string; root_cause_summary?: string }): Promise<IncidentClusterDetail> {
+  const { data } = await apiClient.patch<IncidentClusterDetail>(`${API}/clusters/${id}`, payload);
   return data;
 }
 

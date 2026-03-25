@@ -135,6 +135,14 @@ class IncidentService:
 
         incident = await self._repo.update(incident)
 
+        # Check cluster auto-resolve
+        if data.status == "RESOLVED" and incident.cluster_id:
+            from app.repositories.cluster import ClusterRepository
+            from app.services.cluster import ClusterService
+            cluster_repo = ClusterRepository(self._repo._session)
+            cluster_svc = ClusterService(cluster_repo)
+            await cluster_svc.check_auto_resolve(incident.cluster_id)
+
         await self._repo.add_event(
             IncidentEvent(
                 incident_id=incident.id,
