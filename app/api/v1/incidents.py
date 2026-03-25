@@ -200,6 +200,35 @@ async def generate_narrative(
     return {"narrative": narrative}
 
 
+@router.get("/{incident_id}/suggested-fixes")
+async def get_suggested_fixes(
+    incident_id: uuid.UUID,
+    user: CurrentUser,
+    tenant_id: TenantId,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get AI memory suggestions for an incident based on fingerprint matching."""
+    from app.repositories.ai_memory import AiMemoryRepository
+    from app.services.ai_memory import AiMemoryService
+
+    repo = IncidentRepository(session)
+    svc = IncidentService(repo)
+    incident = await svc.get_incident(incident_id, tenant_id)
+
+    if not incident.fingerprint:
+        return {"suggestions": [], "memory_count": 0}
+
+    mem_repo = AiMemoryRepository(session)
+    mem_svc = AiMemoryService(mem_repo)
+
+    suggestions = await mem_svc.get_suggested_fixes(
+        incident.fingerprint, incident.endpoint_id, tenant_id
+    )
+    total = await mem_repo.count_by_org(tenant_id)
+
+    return {"suggestions": suggestions, "memory_count": total}
+
+
 @router.post("/{incident_id}/notes", response_model=IncidentRead, dependencies=[RequireWrite])
 async def add_note(
     incident_id: uuid.UUID,

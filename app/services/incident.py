@@ -143,6 +143,33 @@ class IncidentService:
             cluster_svc = ClusterService(cluster_repo)
             await cluster_svc.check_auto_resolve(incident.cluster_id)
 
+        # Extract AI memory learning on resolution
+        if data.status == "RESOLVED" and incident.fingerprint:
+            try:
+                from app.repositories.ai_memory import AiMemoryRepository
+                from app.services.ai_memory import AiMemoryService
+                from app.ai.llm_client import llm_client as _llm
+
+                mem_repo = AiMemoryRepository(self._repo._session)
+                mem_svc = AiMemoryService(mem_repo, llm=_llm)
+
+                # Get signal flags
+                mem_flags = []
+                if fp_repo:
+                    cache = await fp_repo.get_cache_entry(incident.fingerprint, incident.endpoint_id)
+                    if cache:
+                        mem_flags = cache.signal_flags or []
+
+                # Get endpoint name
+                ep_name = ""
+                if incident.endpoint:
+                    ep_name = incident.endpoint.name
+
+                await mem_svc.extract_and_store(incident, ep_name, mem_flags)
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception("AI memory extraction failed")
+
         await self._repo.add_event(
             IncidentEvent(
                 incident_id=incident.id,

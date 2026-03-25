@@ -293,6 +293,27 @@ async def _manage_incidents(eid: uuid.UUID, pipeline) -> None:  # noqa: ANN001
                     pipeline.endpoint_name,
                     consecutive,
                 )
+                # Extract learning from resolved incident
+                try:
+                    from app.repositories.ai_memory import AiMemoryRepository
+                    from app.services.ai_memory import AiMemoryService
+                    from app.repositories.fingerprint import FingerprintRepository as FPRepo2
+
+                    mem_repo = AiMemoryRepository(session)
+                    mem_svc = AiMemoryService(mem_repo, llm=llm_client)
+
+                    # Get signal flags from fingerprint cache
+                    fp_repo2 = FPRepo2(session)
+                    cache = None
+                    if resolved.fingerprint:
+                        cache = await fp_repo2.get_cache_entry(resolved.fingerprint, eid)
+                    mem_signal_flags = cache.signal_flags if cache else []
+
+                    await mem_svc.extract_and_store(
+                        resolved, pipeline.endpoint_name, mem_signal_flags
+                    )
+                except Exception:
+                    logger.exception("AI memory extraction failed for incident %s", resolved.id)
 
         await session.commit()
 

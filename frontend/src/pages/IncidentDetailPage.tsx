@@ -23,6 +23,7 @@ import {
 import clsx from "clsx";
 import { PatternMatchCard } from "@/components/incidents/PatternMatchCard.tsx";
 import { NarrativeCard } from "@/components/incidents/NarrativeCard.tsx";
+import { SuggestedFixesCard } from "@/components/incidents/SuggestedFixesCard.tsx";
 import type { IncidentStatus, IncidentSeverity, IncidentEvent } from "@/types/index.ts";
 
 const SEVERITY_COLORS: Record<IncidentSeverity, string> = {
@@ -277,6 +278,9 @@ export function IncidentDetailPage() {
 
       {/* Pattern match / fingerprinting */}
       <PatternMatchCard incidentId={id!} />
+
+      {/* AI suggested fixes */}
+      <SuggestedFixesCard incidentId={id!} />
 
       {/* Two-column: Notes + Timeline */}
       <div className="grid gap-6 lg:grid-cols-5">

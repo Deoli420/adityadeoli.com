@@ -421,6 +421,31 @@ export async function generateNarrative(id: string): Promise<{ narrative: string
   return data;
 }
 
+// ── AI Memory / Suggested Fixes ──────────────────────────────────────────
+
+export interface SuggestedFix {
+  id: string;
+  learning: string;
+  resolution_action: string | null;
+  confidence: number;
+  endpoint_name: string | null;
+  incident_id: string;
+  created_at: string | null;
+  source: "same_endpoint" | "cross_endpoint";
+}
+
+export interface SuggestedFixesResponse {
+  suggestions: SuggestedFix[];
+  memory_count: number;
+}
+
+export async function getIncidentSuggestedFixes(id: string): Promise<SuggestedFixesResponse> {
+  const { data } = await apiClient.get<SuggestedFixesResponse>(
+    `${API}/incidents/${id}/suggested-fixes`,
+  );
+  return data;
+}
+
 // ── Export ─────────────────────────────────────────────────────────────────
 
 export interface ExportParams {
