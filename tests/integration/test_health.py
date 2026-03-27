@@ -1,9 +1,14 @@
 """Health check tests -- verifies the API is alive and responsive."""
+import allure
 import pytest
 
 pytestmark = [pytest.mark.smoke]
 
 
+@allure.feature("Health")
+@allure.story("Health check returns 200 with status ok")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.title("GET /health returns 200 with status ok and version info")
 @pytest.mark.asyncio
 async def test_health_endpoint(client):
     """GET /api/v1/health returns 200 with status ok."""
@@ -15,6 +20,10 @@ async def test_health_endpoint(client):
     assert "version" in data
 
 
+@allure.feature("Health")
+@allure.story("Health check reports database connectivity")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.title("GET /health includes database connectivity status")
 @pytest.mark.asyncio
 async def test_health_database_field(client):
     """Health check reports database connectivity status."""

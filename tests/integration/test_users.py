@@ -1,4 +1,5 @@
 """User management tests -- profile, list, password change."""
+import allure
 import pytest
 
 pytestmark = [pytest.mark.regression]
@@ -7,6 +8,10 @@ pytestmark = [pytest.mark.regression]
 # ── Get Current User ──────────────────────────────────────────────────────
 
 
+@allure.feature("User Management")
+@allure.story("Get current user profile")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("GET /users/me returns the current user profile")
 @pytest.mark.asyncio
 async def test_get_my_profile(client, owner_headers):
     """GET /api/v1/users/me returns the current user profile."""
@@ -18,6 +23,10 @@ async def test_get_my_profile(client, owner_headers):
     assert data["is_active"] is True
 
 
+@allure.feature("User Management")
+@allure.story("Get profile without auth returns 401")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("GET /users/me without auth returns 401")
 @pytest.mark.asyncio
 async def test_get_profile_unauthenticated(client):
     """GET /api/v1/users/me without auth returns 401."""
@@ -28,6 +37,10 @@ async def test_get_profile_unauthenticated(client):
 # ── List Users ────────────────────────────────────────────────────────────
 
 
+@allure.feature("User Management")
+@allure.story("List all org members")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("GET /users/ returns all org members")
 @pytest.mark.asyncio
 async def test_list_users(client, owner_headers, test_admin, test_member):
     """GET /api/v1/users/ returns all org members."""
@@ -45,6 +58,10 @@ async def test_list_users(client, owner_headers, test_admin, test_member):
 # ── Update Profile ────────────────────────────────────────────────────────
 
 
+@allure.feature("User Management")
+@allure.story("Update display name")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("PATCH /users/me updates display name")
 @pytest.mark.asyncio
 async def test_update_display_name(client, owner_headers):
     """PATCH /api/v1/users/me updates display name."""
@@ -57,6 +74,10 @@ async def test_update_display_name(client, owner_headers):
     assert response.json()["display_name"] == "Updated Owner"
 
 
+@allure.feature("User Management")
+@allure.story("Update profile with empty body returns 400")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("PATCH /users/me with empty body returns 400")
 @pytest.mark.asyncio
 async def test_update_profile_no_fields(client, owner_headers):
     """PATCH /api/v1/users/me with empty body returns 400."""
@@ -69,6 +90,10 @@ async def test_update_profile_no_fields(client, owner_headers):
 # ── Change Password ───────────────────────────────────────────────────────
 
 
+@allure.feature("User Management")
+@allure.story("Change password with correct current password")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("PATCH /users/me/password changes the password")
 @pytest.mark.asyncio
 async def test_change_password(client, owner_headers):
     """PATCH /api/v1/users/me/password changes the password."""
@@ -83,6 +108,10 @@ async def test_change_password(client, owner_headers):
     assert response.status_code == 204
 
 
+@allure.feature("User Management")
+@allure.story("Change password with wrong current password returns 400")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("PATCH /users/me/password with wrong current password returns 400")
 @pytest.mark.asyncio
 async def test_change_password_wrong_current(client, owner_headers):
     """PATCH /api/v1/users/me/password with wrong current password returns 400."""

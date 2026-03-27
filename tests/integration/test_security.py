@@ -1,11 +1,16 @@
 """Security findings endpoint tests."""
 import uuid
 
+import allure
 import pytest
 
 pytestmark = [pytest.mark.regression]
 
 
+@allure.feature("Security Scanner")
+@allure.story("List security findings")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("GET /security/findings returns list (possibly empty)")
 @pytest.mark.asyncio
 async def test_list_security_findings(client, owner_headers):
     """GET /api/v1/security/findings returns list (possibly empty)."""
@@ -14,6 +19,10 @@ async def test_list_security_findings(client, owner_headers):
     assert isinstance(response.json(), list)
 
 
+@allure.feature("Security Scanner")
+@allure.story("Security stats returns aggregate statistics")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("GET /security/stats returns aggregate statistics")
 @pytest.mark.asyncio
 async def test_security_stats(client, owner_headers):
     """GET /api/v1/security/stats returns aggregate statistics."""
@@ -23,6 +32,10 @@ async def test_security_stats(client, owner_headers):
     assert "total" in data or "total_findings" in data or response.status_code == 200
 
 
+@allure.feature("Security Scanner")
+@allure.story("Findings scoped to endpoint")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("GET /security/findings/{endpoint_id} scoped to endpoint")
 @pytest.mark.asyncio
 async def test_findings_by_endpoint(client, owner_headers):
     """GET /api/v1/security/findings/{endpoint_id} scoped to endpoint."""
@@ -35,6 +48,10 @@ async def test_findings_by_endpoint(client, owner_headers):
     assert isinstance(response.json(), list)
 
 
+@allure.feature("Security Scanner")
+@allure.story("Security endpoints require authentication")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.title("Security findings endpoint requires authentication")
 @pytest.mark.asyncio
 async def test_security_findings_unauthenticated(client):
     """Security endpoints require authentication."""
