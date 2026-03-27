@@ -226,7 +226,12 @@ async def validate_invite(
     if not invite or invite.used_at is not None:
         return ValidateInviteResponse(valid=False)
 
-    if invite.expires_at < datetime.now(timezone.utc):
+    # Compare timezone-aware — handle both naive and aware datetimes from DB
+    now = datetime.now(timezone.utc)
+    exp = invite.expires_at
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if exp < now:
         return ValidateInviteResponse(valid=False)
 
     return ValidateInviteResponse(
