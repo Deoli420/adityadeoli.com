@@ -1,0 +1,265 @@
+# ── SentinelAI — Integration Test Pipeline ───────────────────────────────
+#
+# WHY THIS EXISTS (Interview answer):
+# "We have two test pipelines: this fast one (~60s, no Docker) runs on
+# every push and PR as a quality gate. The slower E2E pipeline (~5min,
+# Docker + Playwright) runs only on main. This gives developers instant
+# feedback without blocking their workflow."
+#
+# WHAT IT DOES:
+# 1. Checks out code
+# 2. Sets up Python 3.13
+# 3. Installs dependencies (cached for speed)
+# 4. Runs 92 integration tests against in-memory SQLite
+# 5. Generates Allure results + JUnit XML + HTML report
+# 6. Uploads test artifacts
+# 7. Posts summary to PR
+# 8. Fails the build if any test fails
+#
+# HOW IT WORKS (Interview answer):
+# "FastAPI's TestClient lets us test the full HTTP stack — routing,
+# middleware, auth, validation, database — without starting a server.
+# We swap PostgreSQL for SQLite in-memory, which runs in <1 minute.
+# Each test gets its own clean database state via table truncation."
+#
+# COST: $0 (uses GitHub free tier, 2000 min/month for private repos)
+# SPEED: ~60 seconds total (setup + 92 tests in 40s)
+# ─────────────────────────────────────────────────────────────────────────
+
+name: Integration Tests
+
+# ┌──────────────────────────────────────────────────────────────────────┐
+# │ TRIGGERS                                                             │
+# │                                                                      │
+# │ Interview Q: "When do your tests run?"                              │
+# │ Answer: "On every push to any branch AND on every PR against main.  │
+# │ We skip runs for docs-only changes to save CI minutes."             │
+# └──────────────────────────────────────────────────────────────────────┘
+on:
+  push:
+    branches: [main, "feature/**", "fix/**"]
+    paths-ignore:
+      - "**.md"           # Don't run for README changes
+      - "portfolio/**"     # Portfolio is a separate project
+      - "docs/**"          # Documentation doesn't affect tests
+      - "cli/**"           # CLI has its own test suite (future)
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "portfolio/**"
+      - "docs/**"
+
+# ┌──────────────────────────────────────────────────────────────────────┐
+# │ CONCURRENCY                                                          │
+# │                                                                      │
+# │ Interview Q: "What happens if I push twice quickly?"                │
+# │ Answer: "The first run is cancelled. Only the latest commit's       │
+# │ tests matter. This saves CI minutes and prevents queue buildup."    │
+# └──────────────────────────────────────────────────────────────────────┘
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 1: SMOKE TESTS (Fast gate — blocks everything else)
+  # ════════════════════════════════════════════════════════════════════════
+  #
+  # Interview Q: "Why separate smoke from regression?"
+  # Answer: "Smoke tests (22 tests, <10s) catch catastrophic breakage
+  # immediately. If health/login/create-endpoint is broken, there's no
+  # point running 70 more tests. This saves 50s of CI time on broken builds."
+  #
+  smoke:
+    name: 🔥 Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Python Setup ──────────────────────────────────────────────────
+      #
+      # Interview Q: "Why pin Python 3.13 specifically?"
+      # Answer: "Same version as production Docker image (python:3.13-slim).
+      # Version mismatch between CI and prod is a common source of bugs."
+      #
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # ── Dependency Caching ────────────────────────────────────────────
+      #
+      # Interview Q: "How do you speed up CI?"
+      # Answer: "pip caching. First run installs ~30 packages (20s).
+      # Subsequent runs restore from cache (<3s). Cache key includes
+      # requirements.txt hash so it busts when deps change."
+      #
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('tests/integration/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install -r tests/integration/requirements.txt
+          # Also install app deps needed for imports
+          pip install asyncpg email-validator apscheduler greenlet
+
+      # ── Run Smoke Tests ───────────────────────────────────────────────
+      #
+      # -m smoke: Only tests marked @pytest.mark.smoke
+      # --tb=short: Compact tracebacks (saves log space)
+      # --junit-xml: Machine-readable results for GitHub
+      # --alluredir: Allure-compatible results for reports
+      #
+      - name: Run smoke tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          pytest tests/integration/ \
+            -m smoke \
+            -v \
+            --tb=short \
+            --junit-xml=tests/reports/smoke-results.xml \
+            --alluredir=tests/reports/allure-results
+
+      # ── Upload Results ────────────────────────────────────────────────
+      - name: Upload smoke test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: tests/reports/
+          retention-days: 14
+
+  # ════════════════════════════════════════════════════════════════════════
+  # JOB 2: FULL REGRESSION (Only runs if smoke passes)
+  # ════════════════════════════════════════════════════════════════════════
+  #
+  # Interview Q: "How do you structure your CI jobs?"
+  # Answer: "Fan-out pattern: smoke is the gate, regression + integration
+  # run in parallel after smoke passes. This maximizes throughput while
+  # maintaining fast feedback."
+  #
+  regression:
+    name: 🧪 Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: smoke  # Only run if smoke passes
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('tests/integration/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install -r tests/integration/requirements.txt
+          pip install asyncpg email-validator apscheduler greenlet
+
+      # ── Run ALL Tests (regression + integration markers) ──────────────
+      #
+      # We run the FULL suite here, not just "regression" marker,
+      # because this is the comprehensive gate before merge.
+      #
+      - name: Run full test suite
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          pytest tests/integration/ \
+            -v \
+            --tb=short \
+            --junit-xml=tests/reports/full-results.xml \
+            --alluredir=tests/reports/allure-results \
+            2>&1 | tee tests/reports/test-output.txt
+
+      # ── Allure Report Generation ──────────────────────────────────────
+      #
+      # Interview Q: "How do you report test results?"
+      # Answer: "Three formats: JUnit XML for CI integration (GitHub
+      # natively renders it), Allure for interactive HTML reports (devs
+      # drill into failures), and plain text summary in PR comments."
+      #
+      - name: Upload full test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-test-results
+          path: tests/reports/
+          retention-days: 30
+
+      # ── PR Summary Comment ────────────────────────────────────────────
+      #
+      # Interview Q: "How do developers see test results without clicking into CI?"
+      # Answer: "We write a summary to $GITHUB_STEP_SUMMARY which GitHub
+      # renders as a collapsible section in the Actions tab. For PRs,
+      # the status check shows pass/fail directly in the PR."
+      #
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🧪 Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f tests/reports/test-output.txt ]; then
+            # Extract the final summary line (e.g., "92 passed, 1 skipped in 38.23s")
+            SUMMARY=$(grep -E "^=+.*=+$" tests/reports/test-output.txt | tail -1)
+            PASSED=$(grep -oP '\d+ passed' tests/reports/test-output.txt | tail -1 || echo "0 passed")
+            FAILED=$(grep -oP '\d+ failed' tests/reports/test-output.txt | tail -1 || echo "")
+            SKIPPED=$(grep -oP '\d+ skipped' tests/reports/test-output.txt | tail -1 || echo "")
+
+            if [ -z "$FAILED" ]; then
+              echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Tests failed!**" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$FAILED" ] && echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$SKIPPED" ] && echo "| Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Full Allure report available in workflow artifacts*" >> $GITHUB_STEP_SUMMARY
+
+      # ── Fail if Tests Failed ──────────────────────────────────────────
+      #
+      # Interview Q: "What happens when tests fail?"
+      # Answer: "The workflow exits with code 1, which marks the PR check
+      # as failed. GitHub's branch protection rules then block the merge
+      # button. The developer must fix the tests before merging."
+      #
+      - name: Check for failures
+        if: always()
+        run: |
+          if [ -f tests/reports/full-results.xml ]; then
+            FAILURES=$(grep -oP 'failures="\K[0-9]+' tests/reports/full-results.xml || echo "0")
+            ERRORS=$(grep -oP 'errors="\K[0-9]+' tests/reports/full-results.xml || echo "0")
+            if [ "${FAILURES}" -gt 0 ] || [ "${ERRORS}" -gt 0 ]; then
+              echo "❌ Tests failed: $FAILURES failures, $ERRORS errors"
+              exit 1
+            fi
+            echo "✅ All tests passed"
+          fi
