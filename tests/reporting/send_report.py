@@ -235,16 +235,15 @@ Results:
     body.attach(MIMEText(html_content, "html"))
     msg.attach(body)
 
-    # Attach HTML summary report as file
+    # Attach HTML summary report as a proper .html file
+    # Using MIMEText with subtype "html" ensures correct encoding.
+    # The key: set Content-Disposition to "attachment" so it downloads
+    # as a file instead of rendering inline.
     if attach_html:
-        attachment = MIMEBase("text", "html")
-        attachment.set_payload(html_content.encode("utf-8"))
-        encoders.encode_base64(attachment)
-        attachment.add_header(
-            "Content-Disposition",
-            f'attachment; filename="sentinelai-test-report-{summary.timestamp.replace(" ", "_").replace(":", "-")}.html"',
-        )
-        msg.attach(attachment)
+        report_filename = f"sentinelai-report-{summary.timestamp.replace(' ', '_').replace(':', '-')}.html"
+        html_attachment = MIMEText(html_content, "html", "utf-8")
+        html_attachment.add_header("Content-Disposition", "attachment", filename=report_filename)
+        msg.attach(html_attachment)
 
     # Attach Allure report as JSON data bundle (Gmail blocks HTML/JS zips)
     # Instead of zipping the full report (which Gmail blocks as security risk),
