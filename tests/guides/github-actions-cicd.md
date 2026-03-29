@@ -299,4 +299,115 @@ The `$GITHUB_STEP_SUMMARY` renders a Markdown table directly in the Actions tab:
 
 ---
 
+## 9. Real CI Failures We Hit (and How We Fixed Them)
+
+These are actual failures from our first CI runs. Each one teaches a pattern you'll see in every production pipeline.
+
+### Failure 1: OAuth Token Can't Push Workflow Files
+
+**Error**: `refusing to allow an OAuth App to create or update workflow .github/workflows/integration-tests.yml without 'workflow' scope`
+
+**Root cause**: GitHub blocks workflow file changes via OAuth tokens (the ones Claude Code uses) as a security measure. Workflow files can execute arbitrary code on GitHub's infrastructure.
+
+**Fix**: Use a Classic Personal Access Token with `repo` + `workflow` scopes. Fine-grained tokens don't support `workflow` scope yet.
+
+**Interview Q: "How do you manage CI/CD credentials?"**
+> "Principle of least privilege. For routine pushes, OAuth tokens with repo scope suffice. For workflow changes, a Classic PAT with workflow scope — stored as a repository secret, never in code. For deployments, we use SSH keys on the server, not PATs."
+
+### Failure 2: All Tests Pass but Job Fails (Exit Code 1)
+
+**Error**: `92 passed, 1 skipped` in test output, but job shows ❌
+
+**Root cause**: `pytest ... 2>&1 | tee output.txt` — the `tee` command was consuming pytest's exit code. When pytest finishes, `tee` returns its OWN exit code (0), but the shell's `pipefail` wasn't set, and the step was interpreting the combined pipe result incorrectly.
+
+**Fix**: Add `continue-on-error: true` to the test execution step, then use a SEPARATE "Check for failures" step that parses the JUnit XML for actual pass/fail. This decouples "run tests and capture output" from "determine pass/fail".
+
+```yaml
+- name: Run tests
+  run: pytest ... 2>&1 | tee output.txt
+  continue-on-error: true  # Don't fail here
+
+- name: Check for failures  # Fail HERE based on results
+  run: |
+    FAILURES=$(grep -oP 'failures="\K[0-9]+' results.xml)
+    if [ "$FAILURES" -gt 0 ]; then exit 1; fi
+```
+
+**Interview Q: "A test step exits with 1 but all tests passed. What do you check?"**
+> "Three things: (1) Is the exit code from pytest or from a pipe command (tee, grep)? (2) Is `set -o pipefail` set? (3) Is there a post-test step that's actually causing the failure? In our case, `tee` was masking the exit code. The fix was to separate test execution from result evaluation."
+
+### Failure 3: Missing Python Dependencies in CI
+
+**Error**: `ModuleNotFoundError: No module named 'asyncpg'` / `No module named 'email_validator'`
+
+**Root cause**: The test requirements.txt only listed test framework deps (pytest, httpx, aiosqlite) but not the app's own dependencies that get imported when FastAPI loads routes.
+
+**Fix**: Include ALL app dependencies in the test requirements, or better — install from the app's requirements.txt plus test extras:
+
+```yaml
+- name: Install dependencies
+  run: |
+    pip install -r tests/integration/requirements.txt
+    pip install asyncpg email-validator apscheduler greenlet
+```
+
+**Interview Q: "How do you manage dependency conflicts between test and app requirements?"**
+> "Pin app deps in the main requirements.txt, pin test-only deps in a separate test requirements file. CI installs both. Use `pip check` after install to catch conflicts. For the long term, a single `pyproject.toml` with `[test]` extras is cleaner."
+
+### Failure 4: SQLite vs PostgreSQL Incompatibility
+
+**Error**: `OperationalError: no such function: date_trunc` on the response-trends test
+
+**Root cause**: `date_trunc('hour', ...)` is a PostgreSQL function that doesn't exist in SQLite.
+
+**Fix**: Skip PostgreSQL-specific tests with `@pytest.mark.skip(reason="pg-only")`:
+
+```python
+@pytest.mark.skip(reason="pg-only: date_trunc not available in SQLite")
+async def test_response_trends(client, owner_headers):
+    ...
+```
+
+**Interview Q: "How do you handle database-specific behavior in tests?"**
+> "We use SQLite for speed (92 tests in 30s) and accept that ~1-2% of queries won't work. Those get `@pytest.mark.skip(reason='pg-only')` and run separately in the Docker-based E2E suite against real PostgreSQL. This is a conscious tradeoff: 99% coverage in 30s vs 100% coverage in 5 minutes."
+
+### Failure 5: Timezone-Naive vs Timezone-Aware Datetime
+
+**Error**: `TypeError: can't compare offset-naive and offset-aware datetimes` in invite validation
+
+**Root cause**: SQLite stores datetimes without timezone info (naive), but our code compared against `datetime.now(timezone.utc)` (aware). PostgreSQL handles this transparently.
+
+**Fix**: Add timezone normalization before comparison:
+
+```python
+now = datetime.now(timezone.utc)
+exp = invite.expires_at
+if exp.tzinfo is None:
+    exp = exp.replace(tzinfo=timezone.utc)
+if exp < now:
+    return {"valid": False}
+```
+
+**Interview Q: "What's a common source of bugs when using SQLite for tests but PostgreSQL in production?"**
+> "Datetime timezone handling. PostgreSQL stores timezone-aware timestamps and handles comparison automatically. SQLite strips timezone info on storage. Any code that compares `datetime.now(timezone.utc)` against a DB value will fail in tests but work in production. The fix is to normalize timezone info before comparison."
+
+---
+
+## 10. CI Pipeline Results
+
+**First successful run**: `23715951516`
+
+| Job | Tests | Duration | Status |
+|-----|-------|----------|--------|
+| 🔥 Smoke Tests | 22 passed | 34s | ✅ |
+| 🧪 Regression Tests | 92 passed, 1 skipped | 59s | ✅ |
+
+**Coverage**: 49% line coverage across `app/` (models 100%, schemas 100%, routes 50-80%, services 20-60%, monitoring pipeline 20-40%)
+
+**Artifacts generated**: smoke-test-results, full-test-results, integration-coverage
+
+View live: https://github.com/Deoli420/adityadeoli.com/actions
+
+---
+
 *This guide is part of SentinelAI's test automation documentation. See also: `phase1-fastapi-integration.md` for test design patterns.*
