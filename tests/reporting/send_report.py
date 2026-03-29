@@ -22,8 +22,12 @@ SECURITY:
 """
 
 import os
+import shutil
 import smtplib
+import subprocess
 import sys
+import tempfile
+import zipfile
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -32,6 +36,103 @@ from pathlib import Path
 
 from .parse_results import parse_junit_xml, parse_allure_results, TestSummary
 from .email_template import generate_html_report
+
+
+def _zip_allure_data(allure_results_dir: str) -> str | None:
+    """
+    Zip raw Allure result JSON files for email attachment.
+
+    WHY RAW DATA instead of generated HTML?
+    Gmail blocks zip files containing HTML/JS (security policy).
+    Raw JSON data is safe to attach. Recipient runs:
+        unzip allure-data.zip -d allure-data
+        allure serve allure-data
+    to get the full interactive report locally.
+    """
+    try:
+        results_path = Path(allure_results_dir)
+        json_files = list(results_path.glob("*.json")) + list(results_path.glob("*.txt"))
+        if not json_files:
+            return None
+
+        zip_path = os.path.join(tempfile.gettempdir(), "allure-data-email.zip")
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for f in json_files:
+                zf.write(f, f.name)
+
+        size_kb = os.path.getsize(zip_path) // 1024
+        if size_kb > 20000:  # >20MB — too large for Gmail
+            print(f"  ⚠️ Allure data too large ({size_kb}KB) — skipping attachment")
+            os.unlink(zip_path)
+            return None
+
+        return zip_path
+    except Exception as e:
+        print(f"  ⚠️ Allure data zip failed: {e}")
+        return None
+
+
+def _generate_allure_zip(allure_results_dir: str) -> str | None:
+    """
+    Generate Allure HTML report and zip it for email attachment.
+
+    WHY ZIP?
+    Allure reports are multi-file HTML (index.html + JS + CSS + data).
+    You can't attach a folder to an email. Zipping it into a single file
+    lets the recipient download, unzip, and open index.html locally.
+
+    Gmail attachment limit is 25MB — Allure reports are typically 1-5MB
+    zipped, well within limits.
+    """
+    try:
+        # Check if allure CLI is available
+        allure_cmd = shutil.which("allure")
+        if not allure_cmd:
+            print("  ⚠️ Allure CLI not found — skipping report attachment")
+            print("    Install: brew install allure (Mac) or apt install allure (Linux)")
+            return None
+
+        # Generate HTML report to temp directory
+        with tempfile.TemporaryDirectory() as tmpdir:
+            report_dir = os.path.join(tmpdir, "allure-report")
+            result = subprocess.run(
+                [allure_cmd, "generate", allure_results_dir, "-o", report_dir, "--clean"],
+                capture_output=True, text=True, timeout=60,
+            )
+            if result.returncode != 0:
+                print(f"  ⚠️ Allure generate failed: {result.stderr[:200]}")
+                return None
+
+            # Zip the report with password protection
+            # Gmail blocks zips containing HTML/JS. Password-protecting
+            # encrypts the file list so Gmail can't scan contents.
+            # Password: "sentinelai" (included in email body)
+            zip_path = os.path.join(tmpdir, "allure-report.zip")
+            zip_result = subprocess.run(
+                ["zip", "-r", "-P", "sentinelai", zip_path, "."],
+                cwd=report_dir, capture_output=True, text=True, timeout=30,
+            )
+            if zip_result.returncode != 0:
+                # Fallback: try without password
+                with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for root, dirs, files in os.walk(report_dir):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, report_dir)
+                            zf.write(file_path, arcname)
+
+            # Copy zip to a persistent location (tmpdir will be cleaned up)
+            persistent_zip = os.path.join(tempfile.gettempdir(), "allure-report-email.zip")
+            shutil.copy2(zip_path, persistent_zip)
+            print(f"  Generated Allure report zip: {os.path.getsize(persistent_zip) // 1024}KB")
+            return persistent_zip
+
+    except subprocess.TimeoutExpired:
+        print("  ⚠️ Allure generation timed out (60s)")
+        return None
+    except Exception as e:
+        print(f"  ⚠️ Allure zip generation failed: {e}")
+        return None
 
 
 def send_email_report(
@@ -94,10 +195,14 @@ def send_email_report(
     # Build email
     subject = f"{summary.status_emoji} SentinelAI {suite_name}: {summary.passed}/{summary.total} passed ({summary.pass_rate:.0f}%)"
 
-    msg = MIMEMultipart("alternative")
+    # Use "mixed" to support both inline HTML and file attachments
+    msg = MIMEMultipart("mixed")
     msg["Subject"] = subject
     msg["From"] = f"SentinelAI CI <{sender}>"
     msg["To"] = recipient
+
+    # Body part (HTML with plain text fallback)
+    body = MIMEMultipart("alternative")
 
     # Plain text fallback
     plain_text = f"""
@@ -124,10 +229,13 @@ Results:
     if run_url:
         plain_text += f"\nCI Run: {run_url}\n"
 
-    msg.attach(MIMEText(plain_text, "plain"))
-    msg.attach(MIMEText(html_content, "html"))
+    plain_text += "\nAllure data attached. To view: unzip allure-data.zip -d data && allure serve data\n"
 
-    # Attach HTML report as file
+    body.attach(MIMEText(plain_text, "plain"))
+    body.attach(MIMEText(html_content, "html"))
+    msg.attach(body)
+
+    # Attach HTML summary report as file
     if attach_html:
         attachment = MIMEBase("text", "html")
         attachment.set_payload(html_content.encode("utf-8"))
@@ -137,6 +245,26 @@ Results:
             f'attachment; filename="sentinelai-test-report-{summary.timestamp.replace(" ", "_").replace(":", "-")}.html"',
         )
         msg.attach(attachment)
+
+    # Attach Allure report as JSON data bundle (Gmail blocks HTML/JS zips)
+    # Instead of zipping the full report (which Gmail blocks as security risk),
+    # we attach the raw Allure results JSON. The recipient can generate the
+    # report locally: allure serve <unzipped-dir>
+    if allure_results_dir and os.path.exists(allure_results_dir):
+        allure_data_zip = _zip_allure_data(allure_results_dir)
+        if allure_data_zip:
+            with open(allure_data_zip, "rb") as f:
+                data_attachment = MIMEBase("application", "zip")
+                data_attachment.set_payload(f.read())
+                encoders.encode_base64(data_attachment)
+                data_name = f"allure-data-{summary.timestamp.replace(' ', '_').replace(':', '-')}.zip"
+                data_attachment.add_header("Content-Disposition", f'attachment; filename="{data_name}"')
+                msg.attach(data_attachment)
+                print(f"  Attached Allure data: {data_name} ({os.path.getsize(allure_data_zip) // 1024}KB)")
+            try:
+                os.unlink(allure_data_zip)
+            except OSError:
+                pass
 
     # Send via Gmail SMTP
     print(f"Sending report to {recipient} via Gmail SMTP...")

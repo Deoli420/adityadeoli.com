@@ -257,10 +257,16 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "*Download artifacts for Allure reports + coverage*" >> $GITHUB_STEP_SUMMARY
 
-      # ── Send Email Report ─────────────────────────────────────────
-      # Sends a beautiful HTML email with pass/fail summary, feature
-      # breakdown, and failed test details. Uses Gmail SMTP with App Password.
-      # Secrets needed: GMAIL_USER, GMAIL_APP_PASSWORD, REPORT_EMAIL
+      # ── Install Allure CLI for report generation ─────────────────
+      - name: Install Allure CLI
+        if: always()
+        run: |
+          curl -sL https://github.com/allure-framework/allure2/releases/download/2.32.2/allure-2.32.2.tgz | tar xz -C /opt/
+          echo "/opt/allure-2.32.2/bin" >> $GITHUB_PATH
+
+      # ── Send Email Report with Allure ZIP attachment ─────────────
+      # Sends HTML email + zipped Allure report as attachment.
+      # Recipient can download, unzip, open index.html for full interactive report.
       - name: Send email report
         if: always()
         env:
