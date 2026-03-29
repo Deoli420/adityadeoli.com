@@ -410,4 +410,139 @@ View live: https://github.com/Deoli420/adityadeoli.com/actions
 
 ---
 
+## 11. Email Test Reports (Gmail SMTP)
+
+### Why Email Reports?
+
+CI dashboards require opening GitHub. Email reports land in your inbox — you see pass/fail without context-switching. When tests fail at 3am, you know before standup.
+
+**Interview Q: "How do you notify the team about test failures?"**
+> "Three channels: (1) GitHub PR status checks block the merge button. (2) Email reports with HTML summary land in the team lead's inbox after every CI run. (3) Allure artifacts for detailed investigation. The email is the 'push' notification — you don't have to pull information from CI."
+
+### Architecture
+
+```
+pytest finishes
+    │
+    ▼
+JUnit XML (machine-readable results) + Allure JSON (feature metadata)
+    │
+    ▼
+parse_results.py — Parses XML/JSON into TestSummary dataclass
+    │
+    ▼
+email_template.py — Generates beautiful HTML email from TestSummary
+    │
+    ▼
+send_report.py — Sends via Gmail SMTP (SSL on port 465)
+    │
+    ▼
+Your inbox: ✅ SentinelAI Integration Tests: 92/93 passed (99%)
+```
+
+### How Gmail SMTP Works
+
+```python
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+# 1. Connect to Gmail's SMTP server over SSL (port 465)
+with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+    # 2. Authenticate with App Password (NOT your regular password)
+    smtp.login("your@gmail.com", "16-char-app-password")
+    # 3. Send the message
+    smtp.send_message(msg)
+```
+
+**Why App Password?** Google blocks "less secure app" login. App Passwords bypass this while still requiring 2FA — more secure than a regular password.
+
+**Why SMTP instead of Gmail API?** SMTP is 10 lines of code, no OAuth flow, no refresh tokens, no Google Cloud project. For automated notifications, SMTP is the industry standard.
+
+### The HTML Email Template
+
+Our template follows email design best practices:
+
+| Principle | Why |
+|-----------|-----|
+| **Inline CSS** | Email clients (Outlook, Gmail) strip `<style>` tags |
+| **Table-based layout** | Outlook doesn't support flexbox/grid |
+| **System fonts only** | Custom fonts don't load in email clients |
+| **Max width 600px** | Mobile-friendly default |
+| **Dark-on-light** | Accessible contrast |
+
+The email contains:
+1. **Status badge**: ✅ PASSED or ❌ FAILED with color
+2. **KPI strip**: Total, Passed, Failed, Pass Rate as big numbers
+3. **Duration + skip bar**: Timing and skip counts
+4. **Feature breakdown table**: Each feature with pass/total (from Allure metadata)
+5. **Failed test details**: Name, feature, severity, error message (only on failure)
+6. **CI links**: Direct link to the GitHub Actions run
+
+### Setup (One-time)
+
+1. **Enable 2FA** on your Google account
+2. **Generate App Password**: https://myaccount.google.com/apppasswords
+3. **Set GitHub secrets**:
+   ```bash
+   gh secret set GMAIL_USER --body "your@gmail.com"
+   gh secret set GMAIL_APP_PASSWORD --body "your-16-char-app-password"
+   gh secret set REPORT_EMAIL --body "team-lead@company.com"
+   ```
+
+### Running Locally
+
+```bash
+# After running tests with JUnit XML output
+GMAIL_USER="deoli.works@gmail.com" \
+GMAIL_APP_PASSWORD="your-app-password" \
+REPORT_EMAIL="adityadeoli@gmail.com" \
+PYTHONPATH=. python -m tests.reporting.send_report \
+  tests/reports/full-results.xml \
+  --allure-dir tests/reports/allure-results \
+  --suite-name "Integration Tests"
+```
+
+### In CI (GitHub Actions)
+
+The email step runs after tests complete (even on failure):
+
+```yaml
+- name: Send email report
+  if: always()
+  env:
+    GMAIL_USER: ${{ secrets.GMAIL_USER }}
+    GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+    REPORT_EMAIL: ${{ secrets.REPORT_EMAIL }}
+  run: |
+    python -m tests.reporting.send_report \
+      tests/reports/full-results.xml \
+      --allure-dir tests/reports/allure-results \
+      --suite-name "Integration Tests" \
+      --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+```
+
+**`if: always()`** is critical — without it, the email step skips when tests fail (which is exactly when you NEED the email).
+
+### Interview Questions
+
+**Q: "How do you handle sensitive credentials in CI?"**
+> "GitHub Encrypted Secrets. They're stored encrypted at rest, never printed in logs (masked with ***), only available to workflows in the same repo, and can be rotated without changing code. For Gmail, we use App Passwords which can be revoked individually."
+
+**Q: "Why not use a dedicated email service like SendGrid?"**
+> "For team notifications, Gmail SMTP is simpler — no signup, no API keys, no vendor lock-in. SendGrid shines for transactional emails at scale (1000+/day). We send ~10 reports/day, so Gmail's limit (500/day) is plenty."
+
+**Q: "What if the email fails to send?"**
+> "Non-blocking — the `|| echo 'warning'` ensures email failure doesn't fail the CI build. The JUnit XML and Allure artifacts are always uploaded regardless. Email is a convenience, not a gate."
+
+### Files
+
+| File | What it does |
+|------|-------------|
+| `tests/reporting/parse_results.py` | Parses JUnit XML + Allure JSON into `TestSummary` dataclass |
+| `tests/reporting/email_template.py` | Generates HTML email with inline CSS, tables, and color coding |
+| `tests/reporting/send_report.py` | Gmail SMTP sender with CLI interface |
+
+---
+
 *This guide is part of SentinelAI's test automation documentation. See also: `phase1-fastapi-integration.md` for test design patterns.*
