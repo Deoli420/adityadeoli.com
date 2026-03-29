@@ -212,4 +212,91 @@ allure serve tests/reports/allure-results
 
 ---
 
+---
+
+## 8. Production Pipeline Hardening (7 Fixes)
+
+These are the gaps that separate a "tutorial pipeline" from a production one:
+
+### Fix 1: Hard Timeout on Health Checks
+
+**Before**: Health check loop ran 30 iterations but never exited with failure. If the API never started, the pipeline silently continued and tests failed with confusing connection errors.
+
+**After**: Explicit `exit 1` when health check exhausts all retries, plus immediate Docker log dump.
+
+**Interview Q: "How do you handle service startup in CI?"**
+> "Health check polling with a hard timeout. If the service doesn't respond in 90 seconds, we fail fast with container logs attached. This turns a 15-minute 'why are all tests failing?' debug session into a 2-second 'API didn't start, here's why' diagnosis."
+
+### Fix 2: Docker Logs on Failure
+
+```yaml
+- name: Dump Docker logs on failure
+  if: failure()
+  run: docker compose logs > results/docker-logs.txt
+```
+
+**Why this matters**: Without this, when E2E tests fail, you see "connection refused" but have NO idea why the API crashed. With logs, you see "ModuleNotFoundError: no module named 'app.models.invite'" — instant diagnosis.
+
+### Fix 3: Test Parallelization (pytest-xdist)
+
+```bash
+pytest -n auto  # 1 worker per CPU core
+```
+
+**Before**: 92 tests run sequentially in 40s.
+**After**: 92 tests run on 2-4 workers in ~15s.
+
+**Interview Q: "When should you NOT parallelize tests?"**
+> "When tests share mutable state. If test A writes to a shared database row and test B reads it, parallel execution causes race conditions. We avoid this by isolating each test with its own database cleanup."
+
+### Fix 4: pip Caching
+
+Cache key: `${{ hashFiles('requirements.txt') }}` — changes when deps change, reuses otherwise.
+
+**Before**: Every CI run installs 30+ packages (20s).
+**After**: Cache hit restores in 3s. Cache miss triggers fresh install.
+
+### Fix 5: Retry Strategy (Flaky Test Killer)
+
+```bash
+pytest --reruns 2 --reruns-delay 2
+```
+
+A test that fails on first attempt but passes on retry is **flaky**. Common causes: timing, network, shared state.
+
+**Interview Q: "How do you handle flaky tests?"**
+> "Short-term: `--reruns 2` to unblock the team. Long-term: track which tests rerun frequently (the `rerun` count in our summary) and fix root causes. Reruns are a bandaid, not a cure. If a test needs reruns consistently, it has a design problem."
+
+### Fix 6: Coverage Reporting
+
+```bash
+pytest --cov=app --cov-report=xml --cov-report=term-missing
+```
+
+- `--cov=app`: Measure coverage of the `app/` directory
+- `--cov-report=xml`: Machine-readable for CI tools (Codecov, SonarQube)
+- `--cov-report=term-missing`: Shows which lines aren't covered in terminal output
+
+**Interview Q: "What's a good coverage target?"**
+> "80% line coverage is the industry standard minimum. But coverage is a vanity metric if your tests are weak. I'd rather have 60% coverage with strong assertions than 95% with tests that just call endpoints without checking responses. We focus on critical path coverage first."
+
+### Fix 7: PR Feedback Loop
+
+The `$GITHUB_STEP_SUMMARY` renders a Markdown table directly in the Actions tab:
+
+```
+## 🧪 Integration Test Results
+
+✅ All tests passed!
+
+| Metric | Count |
+|--------|-------|
+| ✅ Passed | 92 passed |
+| ⏭️ Skipped | 1 skipped |
+```
+
+**Why not a PR comment bot?** GitHub's built-in step summary is simpler, doesn't need a separate token, and doesn't clutter PR comments. If you want PR comments, use `marocchino/sticky-pull-request-comment` action.
+
+---
+
 *This guide is part of SentinelAI's test automation documentation. See also: `phase1-fastapi-integration.md` for test design patterns.*

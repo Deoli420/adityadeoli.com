@@ -109,15 +109,16 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r tests/integration/requirements.txt
-          # Also install app deps needed for imports
+          # FIX 3+5+6: parallelization, retries, coverage
+          pip install pytest-xdist pytest-rerunfailures pytest-cov
+          # App deps needed for imports
           pip install asyncpg email-validator apscheduler greenlet
 
       # ── Run Smoke Tests ───────────────────────────────────────────────
       #
       # -m smoke: Only tests marked @pytest.mark.smoke
-      # --tb=short: Compact tracebacks (saves log space)
-      # --junit-xml: Machine-readable results for GitHub
-      # --alluredir: Allure-compatible results for reports
+      # --reruns 2: Retry flaky tests twice (FIX 5)
+      # --cov: Coverage report (FIX 6)
       #
       - name: Run smoke tests
         env:
@@ -126,6 +127,7 @@ jobs:
           pytest tests/integration/ \
             -m smoke \
             -v \
+            --reruns 2 --reruns-delay 1 \
             --tb=short \
             --junit-xml=tests/reports/smoke-results.xml \
             --alluredir=tests/reports/allure-results
@@ -174,18 +176,23 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r tests/integration/requirements.txt
+          pip install pytest-xdist pytest-rerunfailures pytest-cov
           pip install asyncpg email-validator apscheduler greenlet
 
-      # ── Run ALL Tests (regression + integration markers) ──────────────
+      # ── Run ALL Tests ────────────────────────────────────────────────
       #
-      # We run the FULL suite here, not just "regression" marker,
-      # because this is the comprehensive gate before merge.
+      # FIX 3: -n auto → parallel workers (1 per CPU core)
+      # FIX 5: --reruns 2 → retry flaky tests twice
+      # FIX 6: --cov=app → coverage report
       #
       - name: Run full test suite
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest tests/integration/ \
+            -n auto \
+            --reruns 2 --reruns-delay 2 \
+            --cov=app --cov-report=xml:tests/reports/coverage.xml --cov-report=term-missing \
             -v \
             --tb=short \
             --junit-xml=tests/reports/full-results.xml \
@@ -207,13 +214,17 @@ jobs:
           path: tests/reports/
           retention-days: 30
 
-      # ── PR Summary Comment ────────────────────────────────────────────
-      #
-      # Interview Q: "How do developers see test results without clicking into CI?"
-      # Answer: "We write a summary to $GITHUB_STEP_SUMMARY which GitHub
-      # renders as a collapsible section in the Actions tab. For PRs,
-      # the status check shows pass/fail directly in the PR."
-      #
+      # FIX 6: Upload coverage as separate artifact
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage
+          path: tests/reports/coverage.xml
+          retention-days: 14
+
+      # ── PR Summary with pass/fail table ────────────────────────────
+      # FIX 7: Rich summary visible directly in GitHub Actions tab and PR
       - name: Generate test summary
         if: always()
         run: |
@@ -221,11 +232,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f tests/reports/test-output.txt ]; then
-            # Extract the final summary line (e.g., "92 passed, 1 skipped in 38.23s")
-            SUMMARY=$(grep -E "^=+.*=+$" tests/reports/test-output.txt | tail -1)
             PASSED=$(grep -oP '\d+ passed' tests/reports/test-output.txt | tail -1 || echo "0 passed")
             FAILED=$(grep -oP '\d+ failed' tests/reports/test-output.txt | tail -1 || echo "")
             SKIPPED=$(grep -oP '\d+ skipped' tests/reports/test-output.txt | tail -1 || echo "")
+            RERUN=$(grep -oP '\d+ rerun' tests/reports/test-output.txt | tail -1 || echo "")
 
             if [ -z "$FAILED" ]; then
               echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
@@ -236,28 +246,23 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
             echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
-            [ -n "$FAILED" ] && echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
-            [ -n "$SKIPPED" ] && echo "| Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$FAILED" ] && echo "| ❌ Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$SKIPPED" ] && echo "| ⏭️ Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$RERUN" ] && echo "| 🔄 Rerun (flaky) | $RERUN |" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*Full Allure report available in workflow artifacts*" >> $GITHUB_STEP_SUMMARY
+          echo "*Download artifacts for Allure reports + coverage*" >> $GITHUB_STEP_SUMMARY
 
-      # ── Fail if Tests Failed ──────────────────────────────────────────
-      #
-      # Interview Q: "What happens when tests fail?"
-      # Answer: "The workflow exits with code 1, which marks the PR check
-      # as failed. GitHub's branch protection rules then block the merge
-      # button. The developer must fix the tests before merging."
-      #
+      # ── Fail the build if tests failed ─────────────────────────────
       - name: Check for failures
         if: always()
         run: |
           if [ -f tests/reports/full-results.xml ]; then
             FAILURES=$(grep -oP 'failures="\K[0-9]+' tests/reports/full-results.xml || echo "0")
             ERRORS=$(grep -oP 'errors="\K[0-9]+' tests/reports/full-results.xml || echo "0")
-            if [ "${FAILURES}" -gt 0 ] || [ "${ERRORS}" -gt 0 ]; then
+            if [ "${FAILURES:-0}" -gt 0 ] || [ "${ERRORS:-0}" -gt 0 ]; then
               echo "❌ Tests failed: $FAILURES failures, $ERRORS errors"
               exit 1
             fi

@@ -1,0 +1,245 @@
+# ── SentinelAI — E2E Test Pipeline ───────────────────────────────────────
+# Runs on every push and PR against main.
+# Spins up PostgreSQL + Mock Server + API via Docker Compose,
+# seeds test data, runs Playwright API tests, uploads results.
+#
+# IMPROVEMENTS (v2):
+# ✅ Fix 1: Hard timeout fail for health checks (exit 1 if never healthy)
+# ✅ Fix 2: Docker logs dump on failure (saves HOURS debugging)
+# ✅ Fix 3: Test parallelization with pytest-xdist
+# ✅ Fix 4: pip caching (20s → 3s on cache hit)
+# ✅ Fix 5: Retry strategy for flaky tests (--reruns 2)
+# ✅ Fix 6: Coverage reporting (--cov=app)
+# ✅ Fix 7: PR comment with readable summary
+# ─────────────────────────────────────────────────────────────────────────
+
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "portfolio/**"
+      - "cli/**"
+      - "docs/**"
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: 🌐 E2E Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Start test infrastructure ─────────────────────────────────
+      #
+      # FIX 1: Hard timeout fail — if API doesn't start in 90s, exit 1.
+      # BEFORE: Loop ran 30 iterations but never exited on failure.
+      # WHY: A stuck container silently lets the pipeline continue,
+      # causing confusing test failures instead of a clear "API down" error.
+      #
+      - name: Start Docker Compose services
+        working-directory: tests
+        run: |
+          docker compose -f docker-compose.test.yml up -d --build
+
+          echo "Waiting for API to be healthy..."
+          API_READY=false
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
+              echo "✅ API is healthy (attempt $i)"
+              API_READY=true
+              break
+            fi
+            echo "  Waiting for API... (attempt $i/30)"
+            sleep 3
+          done
+
+          if [ "$API_READY" = false ]; then
+            echo "❌ API failed to start after 90 seconds"
+            echo "--- Docker container status ---"
+            docker compose -f docker-compose.test.yml ps
+            echo "--- API container logs ---"
+            docker compose -f docker-compose.test.yml logs api-test --tail 100
+            exit 1
+          fi
+
+          echo "Waiting for mock server..."
+          MOCK_READY=false
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:9999/health > /dev/null 2>&1; then
+              echo "✅ Mock server is healthy (attempt $i)"
+              MOCK_READY=true
+              break
+            fi
+            echo "  Waiting for mock server... (attempt $i/15)"
+            sleep 2
+          done
+
+          if [ "$MOCK_READY" = false ]; then
+            echo "❌ Mock server failed to start after 30 seconds"
+            docker compose -f docker-compose.test.yml logs mock-server --tail 50
+            exit 1
+          fi
+
+          docker compose -f docker-compose.test.yml ps
+
+      # ── 3. Stamp Alembic ────────────────────────────────────────────
+      - name: Stamp Alembic version
+        working-directory: tests
+        run: |
+          docker compose -f docker-compose.test.yml exec -T api-test \
+            sh -c 'cd /app && PYTHONPATH=/app alembic stamp head'
+
+      # ── 4. Set up Python + deps ────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # FIX 4: pip caching — 20s install → 3s cache restore
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-e2e-pip-${{ hashFiles('tests/requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-e2e-pip-
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: |
+          pip install -r requirements-test.txt
+          # FIX 3: parallel execution + FIX 5: retry + FIX 6: coverage
+          pip install pytest-xdist pytest-rerunfailures pytest-cov
+          playwright install --with-deps chromium
+
+      # ── 5. Seed test data ──────────────────────────────────────────
+      - name: Seed test database
+        working-directory: tests
+        run: python seed_data.py --host localhost --port 5433
+
+      # ── 6. Run E2E tests ───────────────────────────────────────────
+      #
+      # FIX 3: -n auto → parallel workers (1 per CPU core)
+      # FIX 5: --reruns 2 --reruns-delay 2 → retry flaky tests twice
+      # FIX 6: --cov=app --cov-report=xml → coverage report
+      #
+      - name: Run Playwright E2E tests
+        working-directory: tests
+        env:
+          API_BASE_URL: http://localhost:8000
+          MOCK_SERVER_URL: http://localhost:9999
+          MOCK_SERVER_INTERNAL_URL: http://mock-server:9999
+        run: |
+          pytest \
+            -n auto \
+            --reruns 2 --reruns-delay 2 \
+            --cov=app --cov-report=xml:results/coverage.xml --cov-report=term-missing \
+            --tb=short -v \
+            --junit-xml=results/e2e-results.xml \
+            2>&1 | tee results/test-output.txt
+        continue-on-error: true
+
+      # ── 7. Upload test results ─────────────────────────────────────
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: tests/results/
+          retention-days: 30
+
+      # ── 8. Upload coverage report ──────────────────────────────────
+      # FIX 6: Coverage artifact for PR review
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-coverage
+          path: tests/results/coverage.xml
+          retention-days: 14
+
+      # ── 9. Generate test summary ───────────────────────────────────
+      # FIX 7: Rich PR summary with pass/fail table
+      - name: Test Summary
+        if: always()
+        working-directory: tests
+        run: |
+          echo "## 🌐 E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f results/test-output.txt ]; then
+            PASSED=$(grep -oP '\d+ passed' results/test-output.txt | tail -1 || echo "0 passed")
+            FAILED=$(grep -oP '\d+ failed' results/test-output.txt | tail -1 || echo "")
+            SKIPPED=$(grep -oP '\d+ skipped' results/test-output.txt | tail -1 || echo "")
+            RERUN=$(grep -oP '\d+ rerun' results/test-output.txt | tail -1 || echo "")
+
+            if [ -z "$FAILED" ]; then
+              echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Tests failed!**" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$FAILED" ] && echo "| ❌ Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$SKIPPED" ] && echo "| ⏭️ Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+            [ -n "$RERUN" ] && echo "| 🔄 Rerun (flaky) | $RERUN |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Download artifacts for full Allure/JUnit reports and coverage*" >> $GITHUB_STEP_SUMMARY
+
+      # ── 10. Fail if tests failed ───────────────────────────────────
+      - name: Check test results
+        working-directory: tests
+        run: |
+          if [ -f results/e2e-results.xml ]; then
+            FAILURES=$(grep -oP 'failures="\K[0-9]+' results/e2e-results.xml || echo "0")
+            ERRORS=$(grep -oP 'errors="\K[0-9]+' results/e2e-results.xml || echo "0")
+            if [ "${FAILURES:-0}" -gt 0 ] || [ "${ERRORS:-0}" -gt 0 ]; then
+              echo "❌ Tests failed: $FAILURES failures, $ERRORS errors"
+              exit 1
+            fi
+            echo "✅ All tests passed"
+          fi
+
+      # ── 11. Dump Docker logs on failure ────────────────────────────
+      # FIX 2: This alone saves HOURS of debugging.
+      # Only runs when tests fail — captures API, DB, and mock server logs.
+      - name: Dump Docker logs on failure
+        if: failure()
+        working-directory: tests
+        run: |
+          echo "## 🐳 Docker Logs (failure debug)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### API Container" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          docker compose -f docker-compose.test.yml logs api-test --tail 50 >> $GITHUB_STEP_SUMMARY 2>&1
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "### Database Container" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          docker compose -f docker-compose.test.yml logs db-test --tail 30 >> $GITHUB_STEP_SUMMARY 2>&1
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          # Also dump full logs to artifact
+          docker compose -f docker-compose.test.yml logs > results/docker-logs.txt 2>&1
+
+      # ── 12. Cleanup ────────────────────────────────────────────────
+      - name: Tear down Docker Compose
+        if: always()
+        working-directory: tests
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans

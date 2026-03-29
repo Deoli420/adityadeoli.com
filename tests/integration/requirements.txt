@@ -3,6 +3,9 @@ pytest>=8.3
 pytest-asyncio>=0.24
 pytest-html>=4.1
 allure-pytest>=2.13
+pytest-xdist>=3.5          # FIX 3: parallel test execution
+pytest-rerunfailures>=14.0  # FIX 5: retry flaky tests
+pytest-cov>=5.0             # FIX 6: coverage reporting
 
 # HTTP client for TestClient
 httpx>=0.28
