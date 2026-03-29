@@ -257,6 +257,27 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "*Download artifacts for Allure reports + coverage*" >> $GITHUB_STEP_SUMMARY
 
+      # ── Send Email Report ─────────────────────────────────────────
+      # Sends a beautiful HTML email with pass/fail summary, feature
+      # breakdown, and failed test details. Uses Gmail SMTP with App Password.
+      # Secrets needed: GMAIL_USER, GMAIL_APP_PASSWORD, REPORT_EMAIL
+      - name: Send email report
+        if: always()
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          REPORT_EMAIL: ${{ secrets.REPORT_EMAIL }}
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          if [ -f tests/reports/full-results.xml ]; then
+            python -m tests.reporting.send_report \
+              tests/reports/full-results.xml \
+              --allure-dir tests/reports/allure-results \
+              --suite-name "Integration Tests" \
+              --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              || echo "⚠️ Email report failed (non-blocking)"
+          fi
+
       # ── Fail the build if tests failed ─────────────────────────────
       - name: Check for failures
         if: always()
