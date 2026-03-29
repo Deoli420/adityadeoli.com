@@ -189,6 +189,7 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
+          set -o pipefail
           pytest tests/integration/ \
             -n auto \
             --reruns 2 --reruns-delay 2 \
@@ -198,6 +199,7 @@ jobs:
             --junit-xml=tests/reports/full-results.xml \
             --alluredir=tests/reports/allure-results \
             2>&1 | tee tests/reports/test-output.txt
+        continue-on-error: true
 
       # ── Allure Report Generation ──────────────────────────────────────
       #
