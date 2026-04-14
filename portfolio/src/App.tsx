@@ -26,6 +26,7 @@ import { AutomationFrameworkLanding } from './components/AutomationFrameworkLand
 import { SentinelAILanding } from './components/SentinelAILanding';
 import { UnifiedAutomationAILanding } from './components/UnifiedAutomationAILanding';
 import { StrykerComplianceTemplate } from './components/StrykerComplianceTemplate';
+import { BeebomSEOLanding } from './components/BeebomSEOLanding';
 import { getCaseStudyBySlug } from './data/casestudies';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -172,6 +173,7 @@ function App() {
           <Route path="/projects/automation-framework" element={<AutomationFrameworkLanding />} />
           <Route path="/projects/unified-automation-ai" element={<UnifiedAutomationAILanding />} />
           <Route path="/projects/stryker-compliance-template" element={<StrykerComplianceTemplate />} />
+          <Route path="/projects/beebom-seo-framework" element={<BeebomSEOLanding />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" replace />} />
