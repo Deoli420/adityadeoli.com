@@ -1,4 +1,4 @@
-import { Activity, TestTubes, BrainCircuit } from 'lucide-react';
+import { Activity, TestTubes, BrainCircuit, Search } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface FeaturedProject {
@@ -62,6 +62,29 @@ export const featuredProjects: FeaturedProject[] = [
       'Page Object Model with real DOM selectors, explicit waits, and Allure reporting',
       'Parametrized + negative/boundary tests across UI, API, and performance layers',
       'Pre-built scaling path: Standalone → Grid → K8s with zero code changes',
+    ],
+  },
+  {
+    slug: 'beebom-seo-framework',
+    title: 'Beebom SEO Framework',
+    tagline: 'Automated SEO Auditing for beebom.com',
+    description:
+      'Production-ready SEO testing framework that crawls live URLs, runs 1,300+ tests across 7 categories on a 10M+ visitor site, catches real SEO issues, and emails color-coded reports nightly — all on Docker and GitHub Actions.',
+    accentColor: 'cyber-violet',
+    icon: Search,
+    detailPath: '/projects/beebom-seo-framework',
+    githubUrl: 'https://github.com/Deoli420/beebom-seo-framework',
+    metrics: [
+      { label: 'Test Cases', value: '1,304' },
+      { label: 'Pass Rate', value: '97.1%' },
+      { label: 'URLs Tested', value: '54' },
+      { label: 'Real Findings', value: '16' },
+    ],
+    techHighlights: ['Python', 'Playwright', 'PyTest', 'Docker', 'GitHub Actions', 'SQLite'],
+    highlights: [
+      'Page Object Model with 20+ methods — zero hardcoded selectors in tests',
+      '16 genuine SEO findings on live beebom.com: empty headings, missing schemas, slow loads',
+      'URL crawler + verification pipeline — caught 404 bug that inflated failures by 130%',
     ],
   },
   {
