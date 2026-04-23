@@ -1,4 +1,4 @@
-import { Activity, TestTubes, BrainCircuit, Search } from 'lucide-react';
+import { Activity, TestTubes, BrainCircuit, Search, Mic } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface FeaturedProject {
@@ -108,6 +108,30 @@ export const featuredProjects: FeaturedProject[] = [
       'Self-healing locators with fallback chains and cached healing for zero-flake tests',
       'Medical AI validator: disclaimer enforcement, hallucination detection, dangerous pattern blocking',
       'Cosine/Jaccard/Embedding similarity engine for non-deterministic LLM output scoring',
+    ],
+  },
+  {
+    slug: 'dynotest',
+    title: 'DynoTest',
+    tagline: 'End-to-End Testing Framework for Multilingual Voice AI',
+    description:
+      'Opinionated Python framework for testing voice + chat AI agents in the hospitality domain. Five-layer quality pyramid (component → conversation → integration → adversarial → chaos) plus multilingual + performance suites, a reference mock agent with runnable FastAPI PMS/payment services, and an auto-generated markdown bug-report pipeline.',
+    accentColor: 'cyber-cyan',
+    icon: Mic,
+    detailPath: '/projects/dynotest',
+    githubUrl: 'https://github.com/Deoli420/dynotest',
+    metrics: [
+      { label: 'Tests Passing', value: '384' },
+      { label: 'Quality Layers', value: '5' },
+      { label: 'Languages', value: 'EN · HI · Hinglish' },
+      { label: 'Full Run', value: '~45s' },
+    ],
+    techHighlights: ['Python 3.11', 'pytest', 'FastAPI', 'httpx', 'pydantic v2', 'Locust', 'Allure', 'Newman'],
+    highlights: [
+      'Property-based assertions over equality — tests survive LLM paraphrasing',
+      'Runtime chaos injection via admin endpoints (PMS 500s, timeouts, malformed JSON)',
+      'Prompt-injection, PII, hallucination, and abuse defences as first-class test layers',
+      'Deterministic reference agent by default; stochastic and real-LLM modes are opt-in',
     ],
   },
 ];
