@@ -78,7 +78,16 @@ function App() {
   const MainContent = () => {
     useScrollHaptics(['impact', 'cta']);
 
-    const [showIntro, setShowIntro] = useState(true);
+    // Skip the spiral intro entirely on mobile / touch devices —
+    // the WebGL animation drops frames on low-end mobile GPUs and
+    // the intro overlay is a poor first impression there.
+    const isTouchDevice =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(pointer: coarse)').matches ||
+        (navigator.maxTouchPoints || 0) > 0 ||
+        window.innerWidth < 768);
+
+    const [showIntro, setShowIntro] = useState(!isTouchDevice);
     const [introFading, setIntroFading] = useState(false);
     const [enterVisible, setEnterVisible] = useState(false);
 
