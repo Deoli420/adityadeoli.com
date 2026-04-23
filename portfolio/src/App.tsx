@@ -45,6 +45,20 @@ function App() {
     // DevTools Easter Egg
     console.log("%c👀 Nice try inspector. But you're not the bug hunter here.", "color: #8e44ec; font-size: 20px; font-weight: bold;");
 
+    // Skip dev-tools detection on mobile/touch devices.
+    // Mobile browsers fire `resize` when the URL bar hides or the keyboard
+    // opens, which creates false positives and a spurious shake animation.
+    const isTouchDevice =
+      window.matchMedia('(pointer: coarse)').matches ||
+      (navigator.maxTouchPoints || 0) > 0 ||
+      window.innerWidth < 768;
+
+    if (isTouchDevice) {
+      // Ensure the class is never applied on mobile, even if set previously.
+      document.body.classList.remove('glitch-effect');
+      return;
+    }
+
     const detectDevTools = () => {
       const threshold = 160;
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
