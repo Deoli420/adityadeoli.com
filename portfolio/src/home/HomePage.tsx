@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
 import { ArrowDown, ArrowUpRight, Mail } from 'lucide-react';
 import { featuredProjects, type FeaturedProject } from '../data/featuredProjects';
 import { experiences, testimonials } from '../data';
-import { TrustField } from './TrustField';
-import { Verifier } from './Verifier';
+import { RunStrip } from './RunStrip';
+import { Loader } from './Loader';
 import { Pipeline } from './Pipeline';
 import { ScrambleText } from '@/components/ui/scramble-text';
 import { MagneticButton } from '@/components/ui/magnetic-button';
@@ -117,10 +117,11 @@ const useIstClock = () => {
 
 /* ── sections ────────────────────────────────────────────── */
 
-const Nav: React.FC = () => {
+const Nav: React.FC<{ visible: boolean }> = ({ visible }) => {
   const time = useIstClock();
+  // opacity on the nav itself: a wrapper would break its mix-blend-mode
   return (
-    <nav className="hp-nav hp-mono" aria-label="Primary">
+    <nav className="hp-nav hp-mono" aria-label="Primary" style={{ opacity: visible ? 1 : 0, transition: 'opacity .6s' }}>
       <a href="#top" className="hp-nav__name" style={{ fontFamily: 'var(--sans)' }}>Aditya Deoli</a>
       <div className="hp-nav__links">
         <a href="#principles">Principles</a>
@@ -135,44 +136,56 @@ const Nav: React.FC = () => {
   );
 };
 
-const Hero: React.FC = () => {
-  const lines = [
-    <span key="a"><em>Trust</em> is an</span>,
-    <span key="b">engineering</span>,
-    <span key="c">problem.</span>,
-  ];
+const Swarm = React.lazy(() => import('./Swarm'));
+
+const Hero: React.FC<{ formed: boolean; booted: boolean }> = ({ formed, booted }) => {
+  const heroRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const fade = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const lift = useTransform(scrollYProgress, [0, 1], ['0px', '-90px']);
+
+  const enter = (delay: number) => ({
+    initial: { opacity: 0, y: 18 },
+    animate: booted ? { opacity: 1, y: 0 } : undefined,
+    transition: { duration: 0.9, ease, delay },
+  });
+
   return (
-    <header id="top" className="hp-hero">
-      <div className="hp-hero__canvas"><TrustField /></div>
+    <header id="top" ref={heroRef} className="hp-hero">
+      <div className="hp-hero__canvas">
+        <React.Suspense fallback={null}>
+          <Swarm heroRef={heroRef} stageRef={stageRef} formed={formed} scroll={scrollYProgress} />
+        </React.Suspense>
+      </div>
       <div className="hp-hero__fade" />
-      <div className="hp-wrap hp-hero__inner" style={{ width: '100%' }}>
-        <motion.div
-          className="hp-eyebrow hp-mono"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
-        >
+
+      <motion.div className="hp-wrap hp-hero__inner" style={{ opacity: fade, y: lift }}>
+        {/* the swarm forms inside this box */}
+        <div ref={stageRef} className="hp-stage" aria-hidden="true" />
+
+        <motion.div className="hp-eyebrow hp-mono" {...enter(0.05)}>
           <span>Aditya Deoli</span>
-          <ScrambleText intervalMs={30}>Member of Technical Staff — Emergent</ScrambleText>
+          {booted && <ScrambleText intervalMs={30}>Member of Technical Staff — Emergent</ScrambleText>}
           <span className="hp-ok">● Building agent reliability</span>
         </motion.div>
 
-        <h1 className="hp-h1">
-          {lines.map((l, i) => (
-            <span className="hp-line" key={i}>
-              <motion.span
-                initial={{ y: '105%' }}
-                animate={{ y: 0 }}
-                transition={{ duration: 1.1, ease, delay: 0.25 + i * 0.12 }}
-              >
-                {l}
-              </motion.span>
-            </span>
-          ))}
+        <h1 className="hp-h1 hp-h1--hero">
+          <span className="hp-line">
+            <motion.span
+              style={{ display: 'inline-block' }}
+              initial={{ y: '110%' }}
+              animate={booted ? { y: 0 } : undefined}
+              transition={{ duration: 1.1, ease, delay: 0.15 }}
+            >
+              <em>Trust</em> is an engineering problem.
+            </motion.span>
+          </span>
         </h1>
 
         <div className="hp-hero__grid">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.8 }}>
+          <motion.div {...enter(0.35)}>
             <p className="hp-lede">
               I build the systems that make <strong>AI agents trustworthy</strong> — blind evals, verification
               pipelines and test automation for an AI platform that builds apps from a prompt.
@@ -186,16 +199,18 @@ const Hero: React.FC = () => {
               </MagneticButton>
             </div>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease, delay: 1 }}>
-            <Verifier />
-          </motion.div>
+          <motion.dl className="hp-meta hp-mono" {...enter(0.5)}>
+            <div><dt>Now</dt><dd>Member of Technical Staff, Emergent</dd></div>
+            <div><dt>Focus</dt><dd>Evals · verification · test automation</dd></div>
+            <div><dt>Before</dt><dd>Founding QA, Intract — 0 → 11M users</dd></div>
+            <div className="hp-meta__hint"><dt>Try</dt><dd>Move through the swarm — it verifies what you touch</dd></div>
+          </motion.dl>
         </div>
 
-        <div className="hp-scrollcue hp-mono">
-          <span className="hp-scrollcue__hint">Move the cursor — the lens verifies what it touches</span>
-          <span>Scroll ↓</span>
-        </div>
-      </div>
+        <motion.div {...enter(0.65)}>
+          <RunStrip running={booted} />
+        </motion.div>
+      </motion.div>
     </header>
   );
 };
@@ -462,18 +477,51 @@ const Closing: React.FC = () => (
   </section>
 );
 
+const BOOT_KEY = 'hp-booted';
+
+/** First visit in a session plays the boot screen; repeat visits and reduced motion skip it. */
+const shouldBoot = () => {
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    return sessionStorage.getItem(BOOT_KEY) !== '1';
+  } catch {
+    return false;
+  }
+};
+
 export const HomePage: React.FC = () => {
+  const [loading, setLoading] = useState(shouldBoot);
+  // formed: the swarm snaps into shape · booted: the hero copy animates in
+  const [formed, setFormed] = useState(!loading);
+  const [booted, setBooted] = useState(!loading);
+
   useEffect(() => {
     const prev = document.body.style.background;
     document.body.style.background = '#0a0a0b';
     return () => { document.body.style.background = prev; };
   }, []);
 
+  // lock scroll while the boot screen is up
+  useEffect(() => {
+    if (!loading) return;
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => { document.documentElement.style.overflow = prev; };
+  }, [loading]);
+
+  const finishBoot = React.useCallback(() => {
+    try { sessionStorage.setItem(BOOT_KEY, '1'); } catch { /* storage blocked: replay next time */ }
+    setLoading(false);
+    setTimeout(() => setBooted(true), 150);
+  }, []);
+  const formSwarm = React.useCallback(() => setFormed(true), []);
+
   return (
     <main className="hp">
+      <AnimatePresence>{loading && <Loader key="loader" onComplete={formSwarm} onDone={finishBoot} />}</AnimatePresence>
       <div className="hp-grain" aria-hidden="true" />
-      <Nav />
-      <Hero />
+      <Nav visible={booted} />
+      <Hero formed={formed} booted={booted} />
       <Ticker />
       <Statement />
       <Principles />
