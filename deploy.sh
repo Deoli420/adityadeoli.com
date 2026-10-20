@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # ── One-command deploy for adityadeoli.com portfolio ──────────────────────
-# Pushes local commits, then SSHs to the droplet, pulls, rebuilds Docker,
-# and verifies the new bundle is being served.
+# Pushes main, then runs the droplet's own deploy script, which pulls,
+# builds the portfolio and publishes dist/ to the folder Caddy serves.
+# Finally checks that the new bundle is live.
 #
 # Usage:
-#   ./deploy.sh                 # normal deploy
-#   ./deploy.sh --skip-push     # only redeploy current HEAD (no git push)
+#   ./deploy.sh                 # normal deploy (must be on main)
+#   ./deploy.sh --skip-push     # only redeploy what is already on origin/main
 #   ./deploy.sh --no-verify     # skip the live bundle hash check
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -13,13 +14,13 @@ set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────
 DROPLET_USER="deploy"
-DROPLET_HOST="64.227.143.70"
+DROPLET_HOST="137.184.63.41"
 SSH_KEY="$HOME/.ssh/id_ed25519_droplet"
-REMOTE_DIR="/home/deploy/sentinelai/portfolio"
+REMOTE_SCRIPT="~/deploy-adityadeoli.sh"   # pull → npm ci → build → rsync to /var/www/adityadeoli.com
 LIVE_URL="https://adityadeoli.com/"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SSH_OPTS="-o ConnectTimeout=15 -o StrictHostKeyChecking=no -i $SSH_KEY"
+SSH_OPTS="-o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i $SSH_KEY"
 
 # ── Colours ───────────────────────────────────────────────────────────────
 GREEN=$'\033[0;32m'
@@ -41,7 +42,7 @@ for arg in "$@"; do
         --skip-push) SKIP_PUSH=1 ;;
         --no-verify) NO_VERIFY=1 ;;
         -h|--help)
-            sed -n '2,12p' "${BASH_SOURCE[0]}"
+            sed -n '2,11p' "${BASH_SOURCE[0]}"
             exit 0
             ;;
         *) die "Unknown flag: $arg" ;;
@@ -58,10 +59,12 @@ command -v git  >/dev/null || die "git not installed"
 command -v curl >/dev/null || die "curl not installed"
 command -v ssh  >/dev/null || die "ssh not installed"
 
+# The droplet always deploys origin/main, so pushing any other branch deploys nothing.
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-[ "$BRANCH" = "main" ] || warn "You are on branch '$BRANCH' (not 'main')"
+if [ "$SKIP_PUSH" -eq 0 ] && [ "$BRANCH" != "main" ]; then
+    die "You are on '$BRANCH'. The droplet deploys origin/main — merge into main first, or use --skip-push."
+fi
 
-# Capture current live bundle hash for diff comparison later.
 if [ "$NO_VERIFY" -eq 0 ]; then
     OLD_BUNDLE="$(curl -s "$LIVE_URL" | grep -oE 'src="/assets/index-[^"]+\.js"' | head -1 || true)"
     log "Current live bundle: ${OLD_BUNDLE:-<unknown>}"
@@ -69,51 +72,40 @@ fi
 
 # ── 2. Push (unless skipped) ─────────────────────────────────────────────
 if [ "$SKIP_PUSH" -eq 0 ]; then
-    log "Pushing to origin/$BRANCH..."
     if ! git diff-index --quiet HEAD --; then
         warn "You have uncommitted changes — they will NOT be deployed."
     fi
-    git push origin "$BRANCH"
+    log "Pushing main..."
+    git push origin main
     ok "Pushed."
 else
     log "Skipping push (--skip-push)"
 fi
 
-LOCAL_SHA="$(git rev-parse --short HEAD)"
-log "Local HEAD: $LOCAL_SHA"
+EXPECTED_SHA="$(git rev-parse --short origin/main)"
+log "Deploying origin/main @ $EXPECTED_SHA"
 
 # ── 3. Remote deploy ─────────────────────────────────────────────────────
-log "Deploying to droplet..."
+log "Running $REMOTE_SCRIPT on $DROPLET_HOST..."
+REMOTE_OUT="$(ssh $SSH_OPTS "$DROPLET_USER@$DROPLET_HOST" "$REMOTE_SCRIPT" 2>&1)" || {
+    printf '%s\n' "$REMOTE_OUT" | tail -30
+    die "Remote deploy failed."
+}
+printf '%s\n' "$REMOTE_OUT" | grep -E "built in|Deployed|error|Error" || true
 
-ssh $SSH_OPTS "$DROPLET_USER@$DROPLET_HOST" bash <<REMOTE
-set -euo pipefail
-cd "$REMOTE_DIR"
-echo "── Remote host: \$(hostname)"
-echo "── Pulling..."
-git pull origin main 2>&1 | tail -5
-REMOTE_SHA=\$(git rev-parse --short HEAD)
-echo "── Remote HEAD: \$REMOTE_SHA"
-if [ "\$REMOTE_SHA" != "$LOCAL_SHA" ]; then
-    echo "WARNING: remote HEAD (\$REMOTE_SHA) does not match local ($LOCAL_SHA)"
-fi
-echo "── Rebuilding Docker image..."
-docker compose up -d --build --force-recreate 2>&1 | tail -10
-echo "── Final container status:"
-docker compose ps
-REMOTE
-
-ok "Remote deploy complete."
+DEPLOYED_LINE="$(printf '%s\n' "$REMOTE_OUT" | grep '^Deployed ' | tail -1 || true)"
+case "$DEPLOYED_LINE" in
+    "Deployed $EXPECTED_SHA"*) ok "Remote is on $EXPECTED_SHA." ;;
+    *) warn "Remote reported '${DEPLOYED_LINE:-nothing}', expected $EXPECTED_SHA." ;;
+esac
 
 # ── 4. Verify new bundle is live ─────────────────────────────────────────
 if [ "$NO_VERIFY" -eq 0 ]; then
-    log "Waiting 5s for container to settle..."
-    sleep 5
-
     NEW_BUNDLE="$(curl -s "$LIVE_URL" | grep -oE 'src="/assets/index-[^"]+\.js"' | head -1 || true)"
     log "New live bundle:     ${NEW_BUNDLE:-<unknown>}"
 
     if [ -z "$NEW_BUNDLE" ]; then
-        warn "Could not read bundle hash from $LIVE_URL — site may still be restarting."
+        warn "Could not read bundle hash from $LIVE_URL."
     elif [ "$NEW_BUNDLE" = "$OLD_BUNDLE" ]; then
         warn "Bundle hash unchanged — either no JS changes or Vite produced an identical build."
     else
