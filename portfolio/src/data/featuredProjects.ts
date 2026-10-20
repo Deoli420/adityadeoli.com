@@ -1,4 +1,4 @@
-import { Activity, TestTubes, BrainCircuit, Search, Mic } from 'lucide-react';
+import { Activity, TestTubes, BrainCircuit, Search, Mic, Scale, LayoutDashboard, Bot } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface FeaturedProject {
@@ -8,8 +8,10 @@ export interface FeaturedProject {
   description: string;
   accentColor: 'cyber-cyan' | 'cyber-violet' | 'cyber-pink';
   icon: LucideIcon;
-  detailPath: string;
-  githubUrl: string;
+  /** Where the project was built, shown as a badge (omit for personal projects) */
+  context?: string;
+  detailPath?: string;
+  githubUrl?: string;
   liveUrl?: string;
   metrics: { label: string; value: string }[];
   techHighlights: string[];
@@ -17,6 +19,76 @@ export interface FeaturedProject {
 }
 
 export const featuredProjects: FeaturedProject[] = [
+  {
+    slug: 'blind-council-eval',
+    title: 'Blind Council Eval',
+    tagline: 'Bias-Free Quality Verdicts for AI-Generated Apps',
+    description:
+      'Blind A/B/N evaluation pipeline for apps built by AI agents. A sighted stage rebuilds each codebase from the agent\'s tool calls, an airlock scrubs every model, agent and vendor name, then a multi-model judge panel ranks the anonymised builds — no judge ever learns which model built what.',
+    accentColor: 'cyber-cyan',
+    icon: Scale,
+    context: 'Built at Emergent',
+    githubUrl: 'https://github.com/adityad-hub/blind-council-eval',
+    metrics: [
+      { label: 'Eval Runs', value: '100+' },
+      { label: 'Pipeline Zones', value: '3' },
+      { label: 'Leaks Tolerated', value: '0' },
+      { label: 'Pipeline Scripts', value: '10' },
+    ],
+    techHighlights: ['Python', 'LLM-as-Judge', 'LiteLLM', 'OpenRouter', 'Playwright', 'AST'],
+    highlights: [
+      'Hard leak gate — a single surviving model or vendor name aborts the run',
+      'Syntax gate stops reconstruction defects that would bias one arm and fabricate findings',
+      'Counterbalanced read order and vendor-excluded judges; a verdict flip between orders flags an artifact, not a winner',
+      'In a real eval, the blind panel flipped a sighted reviewer\'s code verdict and caught two scoring errors that favoured the incumbent',
+    ],
+  },
+  {
+    slug: 'round-table',
+    title: 'Round Table',
+    tagline: 'Run Blind Model Evals From a Browser',
+    description:
+      'Web app that runs a blind evaluation end to end — create arms, build, collect, scrub, judge, report — with no terminal. A cloud control plane holds the UI and job queue with zero credentials; a worker inside the private network does every privileged step and only ever connects outward.',
+    accentColor: 'cyber-violet',
+    icon: LayoutDashboard,
+    context: 'Built at Emergent',
+    metrics: [
+      { label: 'Pipeline Phases', value: '6' },
+      { label: 'Inbound Ports', value: '0' },
+      { label: 'Secrets in Cloud', value: '0' },
+      { label: 'Storage Drivers', value: '2' },
+    ],
+    techHighlights: ['Python', 'FastAPI', 'MongoDB', 'Playwright', 'Job Queue', 'No-build SPA'],
+    highlights: [
+      'Lease-based claim queue — a stalled worker\'s job is re-claimable with completed phases kept',
+      'Zero-config worker discovers existing credentials and reports read/create rights per environment',
+      'Same code path on MongoDB (hosted) and JSON files (local), so local verification is meaningful',
+      'Wraps the Blind Council scrub, reconstruction and judging code instead of reimplementing it',
+    ],
+  },
+  {
+    slug: 'ai-qa-toolkit',
+    title: 'AI Agent QA Toolkit',
+    tagline: 'Claude Code Skills for Testing an AI Agent Platform',
+    description:
+      'A library of 21 Claude Code skills that turn repeat engineering work into one command — diagnose a stuck user job, verify a new model launch end to end, audit agent runs for leaks, check agent routing across batches of prompts, and draft daily ship and test-suite digests.',
+    accentColor: 'cyber-pink',
+    icon: Bot,
+    context: 'Built at Emergent',
+    metrics: [
+      { label: 'Skills', value: '21' },
+      { label: 'Environments', value: '5' },
+      { label: 'Launch Checks', value: '100' },
+      { label: 'Unapproved Writes', value: '0' },
+    ],
+    techHighlights: ['Claude Code', 'Python', 'SQL', 'Playwright', 'GitHub API', 'Prompt Engineering'],
+    highlights: [
+      'Model-launch QA verifies pricing, fallback, cache safety and plan tiers against live data',
+      'Works across dev, preview, feature, canary and production environments',
+      'CI digests compute failure cascades from the real job dependency graph instead of guessing',
+      'Every write is gated on explicit confirmation — drafts only, nothing posts on its own',
+    ],
+  },
   {
     slug: 'sentinelai',
     title: 'SentinelAI',

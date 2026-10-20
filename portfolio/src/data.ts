@@ -168,9 +168,22 @@ export const skills: Skill[] = [
 
 export const experiences: Experience[] = [
   {
+    company: 'Emergent',
+    role: 'Member of Technical Staff',
+    period: '2026 - Present',
+    description: 'Engineering on an AI agent platform that builds full-stack apps from a prompt — evaluation, automation and agent quality',
+    achievements: [
+      'Built an AI-driven end-to-end regression suite for 17 product modules that runs green on any preview environment',
+      'Designed a blind multi-model evaluation pipeline used to compare models and agents before rollout',
+      'Automated new-model launch QA: a 100-check registry covering pricing, fallback, caching and plan tiers',
+      'Improved design-generation prompts for app-building agents, verified with blind judge panels',
+      'Shipped 21 internal Claude Code skills for job diagnosis, routing checks and daily digests'
+    ]
+  },
+  {
     company: 'Intract.io',
     role: 'Senior QA Engineer',
-    period: '2024 - Present',
+    period: '2024 - 2026',
     description: 'Leading QA initiatives for Web3 platform',
     achievements: [
       'Built AI-powered automation framework',

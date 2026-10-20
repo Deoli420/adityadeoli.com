@@ -51,8 +51,7 @@ export const FeaturedProjects: React.FC = () => {
             Featured Projects
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Personal projects I designed, built, and deployed end-to-end. Each one is a deep dive
-            you can explore.
+            Systems I designed, built, and shipped end-to-end — at Emergent and on my own.
           </p>
         </motion.div>
 
@@ -83,6 +82,11 @@ export const FeaturedProjects: React.FC = () => {
                         {project.title}
                       </h3>
                       <p className="text-sm font-mono text-gray-500">{project.tagline}</p>
+                      {project.context && (
+                        <span className={`inline-block mt-2 px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider rounded border border-${project.accentColor}/20 text-${project.accentColor}`}>
+                          {project.context}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -129,7 +133,9 @@ export const FeaturedProjects: React.FC = () => {
                   </div>
 
                   {/* CTA row */}
+                  {(project.detailPath || project.githubUrl || project.liveUrl) && (
                   <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-800/50">
+                    {project.detailPath && (
                     <Link
                       to={project.detailPath}
                       onClick={() => trigger('tap')}
@@ -138,6 +144,8 @@ export const FeaturedProjects: React.FC = () => {
                       Explore Project
                       <ArrowRight className="w-4 h-4" />
                     </Link>
+                    )}
+                    {project.githubUrl && (
                     <a
                       href={project.githubUrl}
                       target="_blank"
@@ -147,6 +155,7 @@ export const FeaturedProjects: React.FC = () => {
                       <Code2 className="w-4 h-4" />
                       Source Code
                     </a>
+                    )}
                     {project.liveUrl && (
                       <a
                         href={project.liveUrl}
@@ -159,6 +168,7 @@ export const FeaturedProjects: React.FC = () => {
                       </a>
                     )}
                   </div>
+                  )}
                 </div>
               </motion.div>
               </GlowCard>

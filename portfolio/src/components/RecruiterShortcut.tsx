@@ -4,6 +4,7 @@ import { ClipboardList, FileText, Mail, X, ChevronRight } from 'lucide-react';
 import { useHaptics } from '../hooks/useHaptics';
 
 const achievements = [
+  'MTS @ Emergent \u2014 AI agent platform',
   'Founding QA \u2192 0 to 11M users',
   '$10M+ in rewards protected',
   '5,000+ automated tests',

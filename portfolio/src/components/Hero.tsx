@@ -84,7 +84,7 @@ export const Hero: React.FC = () => {
             transition={{ delay: 0.5, duration: 0.6 }}
             className="text-xl md:text-2xl font-semibold text-white/90 mb-3 tracking-wide"
           >
-            Systems QA Engineer&ensp;&mdash;&ensp;Founding QA at 11M-User Web3 Platform
+            Member of Technical Staff&ensp;&mdash;&ensp;Emergent
           </motion.p>
 
           {/* One-line differentiator */}
@@ -94,7 +94,7 @@ export const Hero: React.FC = () => {
             transition={{ delay: 0.6, duration: 0.6 }}
             className="text-base md:text-lg text-white/50 font-mono mb-10 max-w-2xl mx-auto"
           >
-            Built QA from zero. Protected $10M+ in token rewards. Zero critical escapes across 6,500+ campaigns.
+            Building evals, automation and agent-quality systems for an AI app builder. Before that: founding QA at an 11M-user Web3 platform — $10M+ in rewards protected.
           </motion.p>
 
           {/* Primary CTA Buttons */}
